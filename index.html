@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260623-tabs2" />
+    <link rel="stylesheet" href="./styles.css?v=20260623-copy-current" />
   </head>
   <body>
     <div class="app-shell">
@@ -79,13 +79,6 @@
           <div class="packing-layout">
             <aside class="list-sidebar" aria-label="出行清单列表">
               <button class="secondary-btn full-width" id="newListBtn" type="button">新建清单</button>
-              <div class="template-tools">
-                <label for="cloneSource">复制已有清单</label>
-                <div class="compact-row">
-                  <select id="cloneSource" aria-label="选择要复制的清单"></select>
-                  <button class="icon-btn" id="cloneBtn" type="button" title="复制清单">⧉</button>
-                </div>
-              </div>
               <nav class="template-list" id="templateList"></nav>
             </aside>
 
@@ -118,6 +111,7 @@
                 </div>
                 <div class="form-actions">
                   <button class="primary-btn" type="submit">保存清单</button>
+                  <button class="secondary-btn" id="copyTemplateBtn" type="button">复制为新清单</button>
                   <button class="danger-btn" id="deleteTemplateBtn" type="button">删除清单</button>
                 </div>
               </form>
@@ -170,6 +164,6 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260623-tabs2"></script>
+    <script src="./app.js?v=20260623-copy-current"></script>
   </body>
 </html>

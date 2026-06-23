@@ -74,8 +74,6 @@ const todoCounter = document.querySelector("#todoCounter");
 const saveStatus = document.querySelector("#saveStatus");
 
 const newListBtn = document.querySelector("#newListBtn");
-const cloneSource = document.querySelector("#cloneSource");
-const cloneBtn = document.querySelector("#cloneBtn");
 const templateList = document.querySelector("#templateList");
 const templateForm = document.querySelector("#templateForm");
 const templateName = document.querySelector("#templateName");
@@ -83,6 +81,7 @@ const templateCategory = document.querySelector("#templateCategory");
 const templateNotes = document.querySelector("#templateNotes");
 const templatePriority = document.querySelector("#templatePriority");
 const categoryHints = document.querySelector("#categoryHints");
+const copyTemplateBtn = document.querySelector("#copyTemplateBtn");
 const deleteTemplateBtn = document.querySelector("#deleteTemplateBtn");
 const packingItemForm = document.querySelector("#packingItemForm");
 const packingItemInput = document.querySelector("#packingItemInput");
@@ -230,7 +229,6 @@ function renderTodos() {
 
 function renderTemplates() {
   templateList.innerHTML = "";
-  cloneSource.innerHTML = "";
 
   state.templates.forEach((template) => {
     const tab = document.createElement("button");
@@ -245,11 +243,6 @@ function renderTemplates() {
       render();
     });
     templateList.append(tab);
-
-    const option = document.createElement("option");
-    option.value = template.id;
-    option.textContent = template.name;
-    cloneSource.append(option);
   });
 
   const categories = [...new Set(state.templates.map((template) => template.category).filter(Boolean))];
@@ -266,6 +259,7 @@ function renderEditor() {
     packingItems.innerHTML = "";
     packingCounter.textContent = "0 件";
     packingEmpty.classList.add("visible");
+    copyTemplateBtn.disabled = true;
     deleteTemplateBtn.disabled = true;
     return;
   }
@@ -299,6 +293,7 @@ function renderEditor() {
   const packedCount = template.items.filter((item) => item.packed).length;
   packingCounter.textContent = `${packedCount}/${template.items.length} 件`;
   packingEmpty.classList.toggle("visible", template.items.length === 0);
+  copyTemplateBtn.disabled = false;
   deleteTemplateBtn.disabled = state.templates.length <= 1;
 }
 
@@ -499,8 +494,8 @@ newListBtn.addEventListener("click", () => {
   if (state.session) createTemplate();
 });
 
-cloneBtn.addEventListener("click", () => {
-  const source = state.templates.find((template) => template.id === cloneSource.value);
+copyTemplateBtn.addEventListener("click", () => {
+  const source = getActiveTemplate();
   if (source && state.session) createTemplate(source);
 });
 
