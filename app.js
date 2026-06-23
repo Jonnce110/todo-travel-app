@@ -116,6 +116,7 @@ function setActiveView(view) {
 }
 
 async function init() {
+  setActiveView("todo");
   const { data } = await supabaseClient.auth.getSession();
   state.session = data.session;
   updateAuthUi();
