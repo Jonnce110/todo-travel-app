@@ -85,6 +85,11 @@ h2 {
   font-size: 1.24rem;
 }
 
+h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .section-header p {
   margin-bottom: 0;
   color: var(--muted);
@@ -387,27 +392,11 @@ select:focus {
   min-width: 0;
 }
 
-.template-form {
-  display: grid;
+.template-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-}
-
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.field-grid label {
-  display: grid;
-  gap: 7px;
-  color: var(--muted);
-  font-size: 0.88rem;
-  font-weight: 800;
-}
-
-.field-grid span {
-  color: var(--muted);
 }
 
 .form-actions {
@@ -453,9 +442,13 @@ select:focus {
     width: 100%;
   }
 
-  .packing-layout,
-  .field-grid {
+  .packing-layout {
     grid-template-columns: 1fr;
+  }
+
+  .template-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .input-row {

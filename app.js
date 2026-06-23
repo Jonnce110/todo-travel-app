@@ -75,12 +75,8 @@ const saveStatus = document.querySelector("#saveStatus");
 
 const newListBtn = document.querySelector("#newListBtn");
 const templateList = document.querySelector("#templateList");
-const templateForm = document.querySelector("#templateForm");
-const templateName = document.querySelector("#templateName");
-const templateCategory = document.querySelector("#templateCategory");
-const templateNotes = document.querySelector("#templateNotes");
-const templatePriority = document.querySelector("#templatePriority");
-const categoryHints = document.querySelector("#categoryHints");
+const activeTemplateName = document.querySelector("#activeTemplateName");
+const renameTemplateBtn = document.querySelector("#renameTemplateBtn");
 const copyTemplateBtn = document.querySelector("#copyTemplateBtn");
 const deleteTemplateBtn = document.querySelector("#deleteTemplateBtn");
 const packingItemForm = document.querySelector("#packingItemForm");
@@ -237,7 +233,7 @@ function renderTemplates() {
     tab.classList.toggle("active", template.id === state.activeTemplateId);
     tab.innerHTML = `<strong></strong><span></span>`;
     tab.querySelector("strong").textContent = template.name;
-    tab.querySelector("span").textContent = `${template.category} · ${template.items.length} 件`;
+    tab.querySelector("span").textContent = `${template.items.length} 件`;
     tab.addEventListener("click", () => {
       state.activeTemplateId = template.id;
       render();
@@ -245,29 +241,22 @@ function renderTemplates() {
     templateList.append(tab);
   });
 
-  const categories = [...new Set(state.templates.map((template) => template.category).filter(Boolean))];
-  categoryHints.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
 }
 
 function renderEditor() {
   const template = getActiveTemplate();
   if (!template) {
-    templateName.value = "";
-    templateCategory.value = "";
-    templateNotes.value = "";
-    templatePriority.value = "标准";
+    activeTemplateName.textContent = "未选择清单";
     packingItems.innerHTML = "";
     packingCounter.textContent = "0 件";
     packingEmpty.classList.add("visible");
+    renameTemplateBtn.disabled = true;
     copyTemplateBtn.disabled = true;
     deleteTemplateBtn.disabled = true;
     return;
   }
 
-  templateName.value = template.name;
-  templateCategory.value = template.category;
-  templateNotes.value = template.notes || "";
-  templatePriority.value = template.priority || "标准";
+  activeTemplateName.textContent = template.name;
 
   packingItems.innerHTML = "";
   template.items.forEach((item) => {
@@ -293,6 +282,7 @@ function renderEditor() {
   const packedCount = template.items.filter((item) => item.packed).length;
   packingCounter.textContent = `${packedCount}/${template.items.length} 件`;
   packingEmpty.classList.toggle("visible", template.items.length === 0);
+  renameTemplateBtn.disabled = false;
   copyTemplateBtn.disabled = false;
   deleteTemplateBtn.disabled = state.templates.length <= 1;
 }
@@ -499,15 +489,11 @@ copyTemplateBtn.addEventListener("click", () => {
   if (source && state.session) createTemplate(source);
 });
 
-templateForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+renameTemplateBtn.addEventListener("click", () => {
   const template = getActiveTemplate();
   if (!template) return;
-  await updateTemplate(template.id, {
-    name: templateName.value.trim() || "未命名清单",
-    category: templateCategory.value.trim() || "自定义",
-    notes: templateNotes.value.trim(),
-    priority: templatePriority.value,
+  editText(template.name, async (value) => {
+    await updateTemplate(template.id, { name: value || "未命名清单" });
   });
 });
 
