@@ -406,10 +406,29 @@ authForm.addEventListener("submit", async (event) => {
   setAuthMessage("");
   const email = emailInput.value.trim();
   const password = passwordInput.value;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    setAuthMessage(`登录失败：${error.message}`, true);
+  if (!email || !password) {
+    setAuthMessage("请输入邮箱和密码。", true);
+    return;
   }
+
+  setAuthMessage("正在登录...");
+  setStatus("正在登录...");
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    setStatus("登录失败");
+    setAuthMessage(`登录失败：${error.message}`, true);
+    return;
+  }
+
+  if (!data.session) {
+    setStatus("登录失败");
+    setAuthMessage("登录失败：Supabase 没有返回登录会话，请稍后再试。", true);
+    return;
+  }
+
+  state.session = data.session;
+  updateAuthUi();
+  await loadCloudData();
 });
 
 signUpBtn.addEventListener("click", async () => {
@@ -444,6 +463,7 @@ signUpBtn.addEventListener("click", async () => {
 
 signOutBtn.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
+  setAuthMessage("已退出，请重新登录。");
 });
 
 todoForm.addEventListener("submit", async (event) => {
