@@ -679,16 +679,29 @@ select:focus {
     padding: 22px 0 32px;
   }
 
-  .topbar,
   .section-header,
   .form-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .topbar {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 12px;
+  }
+
   .topbar-actions {
-    align-items: stretch;
+    align-items: flex-end;
     flex-direction: column;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .topbar-actions .secondary-btn {
+    width: auto;
+    min-height: 36px;
+    padding: 0 12px;
   }
 
   .view-tabs {
