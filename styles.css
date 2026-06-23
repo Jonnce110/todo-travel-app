@@ -454,6 +454,19 @@ select:focus {
   color: var(--danger);
 }
 
+.inline-edit-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  width: min(100%, 520px);
+}
+
+.delete-confirm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
 .editor {
   min-width: 0;
 }

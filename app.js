@@ -55,6 +55,10 @@ let state = {
   activeTemplateId: null,
   openTemplateMenuId: null,
   addingChildForItemId: null,
+  editingTodoId: null,
+  editingPackingItemId: null,
+  renamingTemplateId: null,
+  confirmingDeleteTemplateId: null,
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -205,13 +209,25 @@ function renderTodos() {
     const node = document.querySelector("#todoItemTemplate").content.firstElementChild.cloneNode(true);
     node.classList.toggle("done", todo.done);
     node.querySelector("input").checked = todo.done;
-    node.querySelector(".item-title").textContent = todo.title;
+    const titleSlot = node.querySelector(".item-title");
+    if (state.editingTodoId === todo.id) {
+      titleSlot.replaceChildren(createInlineEditForm(todo.title, async (value) => {
+        state.editingTodoId = null;
+        await updateTodo(todo.id, { title: value });
+      }, () => {
+        state.editingTodoId = null;
+        render();
+      }));
+    } else {
+      titleSlot.textContent = todo.title;
+    }
     node.querySelector("input").addEventListener("change", async (event) => {
       await updateTodo(todo.id, { done: event.target.checked });
     });
-    node.querySelector(".edit-action").addEventListener("click", () => editText(todo.title, async (value) => {
-      await updateTodo(todo.id, { title: value });
-    }));
+    node.querySelector(".edit-action").addEventListener("click", () => {
+      state.editingTodoId = todo.id;
+      render();
+    });
     node.querySelector(".delete-action").addEventListener("click", async () => {
       await deleteTodo(todo.id);
     });
@@ -261,10 +277,9 @@ function renderTemplates() {
     renameButton.type = "button";
     renameButton.textContent = "重命名";
     renameButton.addEventListener("click", () => {
-      editText(template.name, async (value) => {
-        state.openTemplateMenuId = null;
-        await updateTemplate(template.id, { name: value || "未命名清单" });
-      });
+      state.renamingTemplateId = template.id;
+      state.confirmingDeleteTemplateId = null;
+      render();
     });
 
     const copyButton = document.createElement("button");
@@ -280,16 +295,34 @@ function renderTemplates() {
     deleteButton.className = "danger-menu-action";
     deleteButton.textContent = "删除";
     deleteButton.disabled = state.templates.length <= 1;
-    deleteButton.addEventListener("click", async () => {
+    deleteButton.addEventListener("click", () => {
       if (state.templates.length <= 1) return;
-      const confirmed = window.confirm(`删除「${template.name}」？`);
-      if (confirmed) {
-        state.openTemplateMenuId = null;
-        await deleteTemplate(template.id);
-      }
+      state.confirmingDeleteTemplateId = template.id;
+      state.renamingTemplateId = null;
+      render();
     });
 
     menu.append(renameButton, copyButton, deleteButton);
+    if (state.renamingTemplateId === template.id) {
+      menu.append(createInlineEditForm(template.name, async (value) => {
+        state.renamingTemplateId = null;
+        state.openTemplateMenuId = null;
+        await updateTemplate(template.id, { name: value || "未命名清单" });
+      }, () => {
+        state.renamingTemplateId = null;
+        render();
+      }));
+    }
+    if (state.confirmingDeleteTemplateId === template.id) {
+      menu.append(createDeleteConfirmRow(async () => {
+        state.confirmingDeleteTemplateId = null;
+        state.openTemplateMenuId = null;
+        await deleteTemplate(template.id);
+      }, () => {
+        state.confirmingDeleteTemplateId = null;
+        render();
+      }));
+    }
     card.append(tab, menuButton, menu);
     templateList.append(card);
   });
@@ -327,19 +360,31 @@ function renderPackingItem(template, item, depth) {
   const row = document.querySelector("#packingItemTemplate").content.firstElementChild.cloneNode(true);
   row.classList.toggle("done", item.packed);
   row.querySelector("input").checked = item.packed;
-  row.querySelector(".item-title").textContent = item.title;
+  const titleSlot = row.querySelector(".item-title");
+  if (state.editingPackingItemId === item.id) {
+    titleSlot.replaceChildren(createInlineEditForm(item.title, async (value) => {
+      updateItemById(template.items, item.id, (entry) => {
+        entry.title = value;
+      });
+      state.editingPackingItemId = null;
+      await updateTemplate(template.id, { items: template.items });
+    }, () => {
+      state.editingPackingItemId = null;
+      render();
+    }));
+  } else {
+    titleSlot.textContent = item.title;
+  }
   row.querySelector("input").addEventListener("change", async (event) => {
     updateItemById(template.items, item.id, (entry) => {
       entry.packed = event.target.checked;
     });
     await updateTemplate(template.id, { items: template.items });
   });
-  row.querySelector(".edit-action").addEventListener("click", () => editText(item.title, async (value) => {
-    updateItemById(template.items, item.id, (entry) => {
-      entry.title = value;
-    });
-    await updateTemplate(template.id, { items: template.items });
-  }));
+  row.querySelector(".edit-action").addEventListener("click", () => {
+    state.editingPackingItemId = item.id;
+    render();
+  });
   row.querySelector(".add-child-action").addEventListener("click", () => {
     state.addingChildForItemId = state.addingChildForItemId === item.id ? null : item.id;
     render();
@@ -462,11 +507,60 @@ function removeItemById(items, id) {
     }));
 }
 
-function editText(currentValue, onSave) {
-  const nextValue = window.prompt("修改内容", currentValue);
-  if (!nextValue) return;
-  const trimmed = nextValue.trim();
-  if (trimmed) onSave(trimmed);
+function createInlineEditForm(currentValue, onSave, onCancel) {
+  const form = document.createElement("form");
+  form.className = "inline-edit-form";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.value = currentValue;
+  input.setAttribute("aria-label", "修改内容");
+
+  const saveButton = document.createElement("button");
+  saveButton.className = "secondary-btn";
+  saveButton.type = "submit";
+  saveButton.textContent = "保存";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "icon-btn";
+  cancelButton.type = "button";
+  cancelButton.title = "取消";
+  cancelButton.textContent = "×";
+  cancelButton.addEventListener("click", onCancel);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const value = input.value.trim();
+    if (!value) return;
+    await onSave(value);
+  });
+
+  form.append(input, saveButton, cancelButton);
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
+  return form;
+}
+
+function createDeleteConfirmRow(onConfirm, onCancel) {
+  const row = document.createElement("div");
+  row.className = "delete-confirm-row";
+
+  const confirmButton = document.createElement("button");
+  confirmButton.className = "danger-menu-action";
+  confirmButton.type = "button";
+  confirmButton.textContent = "确认删除";
+  confirmButton.addEventListener("click", onConfirm);
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.textContent = "取消";
+  cancelButton.addEventListener("click", onCancel);
+
+  row.append(confirmButton, cancelButton);
+  return row;
 }
 
 async function addTodo(title) {
