@@ -63,6 +63,8 @@ const signUpBtn = document.querySelector("#signUpBtn");
 const signOutBtn = document.querySelector("#signOutBtn");
 const authMessage = document.querySelector("#authMessage");
 const workspace = document.querySelector(".workspace");
+const viewTabs = document.querySelectorAll("[data-view-tab]");
+const viewPanels = document.querySelectorAll("[data-view-panel]");
 
 const todoForm = document.querySelector("#todoForm");
 const todoInput = document.querySelector("#todoInput");
@@ -99,6 +101,18 @@ function setAuthMessage(message, isError = false) {
 
 function getActiveTemplate() {
   return state.templates.find((template) => template.id === state.activeTemplateId) || state.templates[0];
+}
+
+function setActiveView(view) {
+  viewTabs.forEach((tab) => {
+    const active = tab.dataset.viewTab === view;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+
+  viewPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.viewPanel !== view;
+  });
 }
 
 async function init() {
@@ -464,6 +478,12 @@ signUpBtn.addEventListener("click", async () => {
 signOutBtn.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
   setAuthMessage("已退出，请重新登录。");
+});
+
+viewTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    setActiveView(tab.dataset.viewTab);
+  });
 });
 
 todoForm.addEventListener("submit", async (event) => {

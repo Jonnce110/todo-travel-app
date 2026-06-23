@@ -33,8 +33,17 @@
         <p class="auth-message" id="authMessage"></p>
       </section>
 
+      <nav class="view-tabs" aria-label="功能切换">
+        <button class="view-tab active" type="button" data-view-tab="todo" aria-controls="todoPanel" aria-selected="true">
+          日常待办
+        </button>
+        <button class="view-tab" type="button" data-view-tab="packing" aria-controls="packingPanel" aria-selected="false">
+          出行清单
+        </button>
+      </nav>
+
       <main class="workspace">
-        <section class="panel todo-panel" aria-labelledby="todoTitle">
+        <section class="panel todo-panel" id="todoPanel" data-view-panel="todo" aria-labelledby="todoTitle">
           <div class="section-header">
             <div>
               <h2 id="todoTitle">日常待办</h2>
@@ -58,7 +67,7 @@
           <p class="empty-state" id="todoEmpty">还没有待办，先加一件小事吧。</p>
         </section>
 
-        <section class="panel packing-panel" aria-labelledby="packingTitle">
+        <section class="panel packing-panel" id="packingPanel" data-view-panel="packing" aria-labelledby="packingTitle" hidden>
           <div class="section-header">
             <div>
               <h2 id="packingTitle">出行清单</h2>
