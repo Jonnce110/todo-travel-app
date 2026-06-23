@@ -60,7 +60,6 @@ const authForm = document.querySelector("#authForm");
 const emailInput = document.querySelector("#emailInput");
 const passwordInput = document.querySelector("#passwordInput");
 const signUpBtn = document.querySelector("#signUpBtn");
-const resendBtn = document.querySelector("#resendBtn");
 const signOutBtn = document.querySelector("#signOutBtn");
 const authMessage = document.querySelector("#authMessage");
 const workspace = document.querySelector(".workspace");
@@ -441,27 +440,6 @@ signUpBtn.addEventListener("click", async () => {
     setAuthMessage(`注册成功，但自动登录失败：${signInError.message}。请稍等几秒后手动登录。`, true);
     return;
   }
-});
-
-resendBtn.addEventListener("click", async () => {
-  setAuthMessage("");
-  const email = emailInput.value.trim();
-  if (!email) {
-    setAuthMessage("请输入邮箱后再重发确认邮件。", true);
-    return;
-  }
-  const { error } = await supabaseClient.auth.resend({
-    type: "signup",
-    email,
-    options: {
-      emailRedirectTo: APP_URL,
-    },
-  });
-  if (error) {
-    setAuthMessage(`重发失败：${error.message}`, true);
-    return;
-  }
-  setAuthMessage("确认邮件已重新发送。请检查收件箱、垃圾邮件或促销邮件。");
 });
 
 signOutBtn.addEventListener("click", async () => {
