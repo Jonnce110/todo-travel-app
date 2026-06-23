@@ -432,7 +432,15 @@ signUpBtn.addEventListener("click", async () => {
     setAuthMessage(`注册失败：${error.message}`, true);
     return;
   }
-  setAuthMessage("注册成功。请检查收件箱或垃圾邮件；如果没收到，可以点「重发确认邮件」。");
+
+  setAuthMessage("注册成功，正在登录...");
+  await new Promise((resolve) => window.setTimeout(resolve, 800));
+
+  const { error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (signInError) {
+    setAuthMessage(`注册成功，但自动登录失败：${signInError.message}。请稍等几秒后手动登录。`, true);
+    return;
+  }
 });
 
 resendBtn.addEventListener("click", async () => {

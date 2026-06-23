@@ -10,6 +10,7 @@
 ## Supabase 初始化
 
 在 Supabase 项目的 `SQL Editor` 里运行 `supabase-schema.sql` 一次，用来创建数据表和账号级数据隔离策略。
+这个 SQL 也会让新注册用户自动确认邮箱，因此保留邮箱登录，但不需要点击邮件验证链接。
 
 在 `Authentication` -> `URL Configuration` 里设置：
 
