@@ -541,6 +541,14 @@ select:focus {
   width: 100%;
 }
 
+.template-menu .inline-edit-form {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.template-menu .inline-edit-form input {
+  min-width: 0;
+}
+
 .delete-confirm-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
