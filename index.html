@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>待办与出行清单</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Todo & Packing</p>
+          <h1>待办与出行清单</h1>
+        </div>
+        <div class="storage-pill" id="saveStatus">已自动保存</div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel todo-panel" aria-labelledby="todoTitle">
+          <div class="section-header">
+            <div>
+              <h2 id="todoTitle">日常待办</h2>
+              <p>记录今天要处理的事项。</p>
+            </div>
+            <span class="counter" id="todoCounter">0 项</span>
+          </div>
+
+          <form class="input-row" id="todoForm">
+            <input
+              id="todoInput"
+              type="text"
+              autocomplete="off"
+              placeholder="例如：预约签证、买防晒霜"
+              aria-label="新增待办"
+            />
+            <button class="primary-btn" type="submit">添加</button>
+          </form>
+
+          <ul class="item-list" id="todoList" aria-label="待办列表"></ul>
+          <p class="empty-state" id="todoEmpty">还没有待办，先加一件小事吧。</p>
+        </section>
+
+        <section class="panel packing-panel" aria-labelledby="packingTitle">
+          <div class="section-header">
+            <div>
+              <h2 id="packingTitle">出行清单</h2>
+              <p>按场景维护可复制的装备清单。</p>
+            </div>
+            <span class="counter" id="packingCounter">0 件</span>
+          </div>
+
+          <div class="packing-layout">
+            <aside class="list-sidebar" aria-label="出行清单列表">
+              <button class="secondary-btn full-width" id="newListBtn" type="button">新建清单</button>
+              <div class="template-tools">
+                <label for="cloneSource">复制已有清单</label>
+                <div class="compact-row">
+                  <select id="cloneSource" aria-label="选择要复制的清单"></select>
+                  <button class="icon-btn" id="cloneBtn" type="button" title="复制清单">⧉</button>
+                </div>
+              </div>
+              <nav class="template-list" id="templateList"></nav>
+            </aside>
+
+            <div class="editor">
+              <form class="template-form" id="templateForm">
+                <div class="field-grid">
+                  <label>
+                    <span>清单名称</span>
+                    <input id="templateName" type="text" autocomplete="off" required />
+                  </label>
+                  <label>
+                    <span>类别</span>
+                    <input id="templateCategory" type="text" list="categoryHints" autocomplete="off" required />
+                    <datalist id="categoryHints"></datalist>
+                  </label>
+                </div>
+                <div class="field-grid">
+                  <label>
+                    <span>备注</span>
+                    <input id="templateNotes" type="text" autocomplete="off" />
+                  </label>
+                  <label>
+                    <span>优先级</span>
+                    <select id="templatePriority">
+                      <option value="标准">标准</option>
+                      <option value="轻装">轻装</option>
+                      <option value="完整">完整</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-btn" type="submit">保存清单</button>
+                  <button class="danger-btn" id="deleteTemplateBtn" type="button">删除清单</button>
+                </div>
+              </form>
+
+              <div class="items-toolbar">
+                <form class="input-row" id="packingItemForm">
+                  <input
+                    id="packingItemInput"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="例如：潜水电脑、雪镜、冲浪蜡"
+                    aria-label="新增出行物品"
+                  />
+                  <button class="secondary-btn" type="submit">加入</button>
+                </form>
+              </div>
+
+              <ul class="item-list packing-items" id="packingItems" aria-label="出行物品列表"></ul>
+              <p class="empty-state" id="packingEmpty">这个清单还没有物品。</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="todoItemTemplate">
+      <li class="list-item">
+        <label class="check-row">
+          <input type="checkbox" />
+          <span class="item-title"></span>
+        </label>
+        <div class="item-actions">
+          <button class="icon-btn edit-action" type="button" title="编辑">✎</button>
+          <button class="icon-btn delete-action" type="button" title="删除">×</button>
+        </div>
+      </li>
+    </template>
+
+    <template id="packingItemTemplate">
+      <li class="list-item">
+        <label class="check-row">
+          <input type="checkbox" />
+          <span class="item-title"></span>
+        </label>
+        <div class="item-actions">
+          <button class="icon-btn edit-action" type="button" title="编辑">✎</button>
+          <button class="icon-btn delete-action" type="button" title="删除">×</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
