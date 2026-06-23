@@ -585,7 +585,7 @@ function createDeleteConfirmRow(onConfirm, onCancel) {
   const confirmButton = document.createElement("button");
   confirmButton.className = "danger-menu-action";
   confirmButton.type = "button";
-  confirmButton.textContent = "确认删除";
+  confirmButton.textContent = "删除";
   confirmButton.addEventListener("click", onConfirm);
 
   const cancelButton = document.createElement("button");
