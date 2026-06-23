@@ -54,6 +54,7 @@ let state = {
   templates: [],
   activeTemplateId: null,
   openTemplateMenuId: null,
+  addingChildForItemId: null,
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -339,19 +340,9 @@ function renderPackingItem(template, item, depth) {
     });
     await updateTemplate(template.id, { items: template.items });
   }));
-  row.querySelector(".add-child-action").addEventListener("click", async () => {
-    const title = window.prompt("添加分项");
-    if (!title?.trim()) return;
-    updateItemById(template.items, item.id, (entry) => {
-      entry.children = entry.children || [];
-      entry.children.unshift({
-        id: crypto.randomUUID(),
-        title: title.trim(),
-        packed: false,
-        children: [],
-      });
-    });
-    await updateTemplate(template.id, { items: template.items });
+  row.querySelector(".add-child-action").addEventListener("click", () => {
+    state.addingChildForItemId = state.addingChildForItemId === item.id ? null : item.id;
+    render();
   });
   row.querySelector(".delete-action").addEventListener("click", async () => {
     template.items = removeItemById(template.items, item.id);
@@ -359,6 +350,9 @@ function renderPackingItem(template, item, depth) {
   });
 
   wrapper.append(row);
+  if (state.addingChildForItemId === item.id) {
+    wrapper.append(renderChildInput(template, item, depth + 1));
+  }
   if (item.children.length > 0) {
     const children = document.createElement("ul");
     children.className = "packing-children";
@@ -368,6 +362,54 @@ function renderPackingItem(template, item, depth) {
     wrapper.append(children);
   }
   return wrapper;
+}
+
+function renderChildInput(template, parentItem, depth) {
+  const form = document.createElement("form");
+  form.className = "inline-child-form";
+  form.style.setProperty("--depth", depth);
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.placeholder = "新增分项";
+  input.setAttribute("aria-label", "新增分项");
+
+  const submitButton = document.createElement("button");
+  submitButton.className = "secondary-btn";
+  submitButton.type = "submit";
+  submitButton.textContent = "添加";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "icon-btn";
+  cancelButton.type = "button";
+  cancelButton.title = "取消";
+  cancelButton.textContent = "×";
+  cancelButton.addEventListener("click", () => {
+    state.addingChildForItemId = null;
+    render();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = input.value.trim();
+    if (!title) return;
+    updateItemById(template.items, parentItem.id, (entry) => {
+      entry.children = entry.children || [];
+      entry.children.unshift({
+        id: crypto.randomUUID(),
+        title,
+        packed: false,
+        children: [],
+      });
+    });
+    state.addingChildForItemId = null;
+    await updateTemplate(template.id, { items: template.items });
+  });
+
+  form.append(input, submitButton, cancelButton);
+  requestAnimationFrame(() => input.focus());
+  return form;
 }
 
 function normalizeItems(items) {
