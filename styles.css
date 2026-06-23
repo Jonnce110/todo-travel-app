@@ -226,6 +226,11 @@ h3 {
   margin-bottom: 18px;
 }
 
+.compact-header {
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
 .input-row,
 .compact-row {
   display: grid;

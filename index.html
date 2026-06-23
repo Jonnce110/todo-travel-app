@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260624-centered-responsive" />
+    <link rel="stylesheet" href="./styles.css?v=20260624-clean-packing-header" />
   </head>
   <body>
     <div class="app-shell">
@@ -67,12 +67,8 @@
           <p class="empty-state" id="todoEmpty">还没有待办，先加一件小事吧。</p>
         </section>
 
-        <section class="panel packing-panel" id="packingPanel" data-view-panel="packing" aria-labelledby="packingTitle" hidden>
-          <div class="section-header">
-            <div>
-              <h2 id="packingTitle">出行清单</h2>
-              <p>按场景维护可复制的装备清单。</p>
-            </div>
+        <section class="panel packing-panel" id="packingPanel" data-view-panel="packing" aria-label="出行清单" hidden>
+          <div class="section-header compact-header">
             <span class="counter" id="packingCounter">0 件</span>
           </div>
 
@@ -136,6 +132,6 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260624-centered-responsive"></script>
+    <script src="./app.js?v=20260624-clean-packing-header"></script>
   </body>
 </html>
