@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260624-clean-packing-header" />
+    <link rel="stylesheet" href="./styles.css?v=20260624-tight-packing-layout" />
   </head>
   <body>
     <div class="app-shell">
@@ -68,10 +68,6 @@
         </section>
 
         <section class="panel packing-panel" id="packingPanel" data-view-panel="packing" aria-label="出行清单" hidden>
-          <div class="section-header compact-header">
-            <span class="counter" id="packingCounter">0 件</span>
-          </div>
-
           <div class="packing-layout">
             <aside class="list-sidebar" aria-label="出行清单列表">
               <button class="secondary-btn full-width" id="newListBtn" type="button">新建清单</button>
@@ -81,6 +77,7 @@
             <div class="editor">
               <div class="template-actions">
                 <h3 id="activeTemplateName">未选择清单</h3>
+                <span class="counter" id="packingCounter">0 件</span>
               </div>
 
               <div class="items-toolbar">
@@ -132,6 +129,6 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260624-clean-packing-header"></script>
+    <script src="./app.js?v=20260624-tight-packing-layout"></script>
   </body>
 </html>
