@@ -53,6 +53,7 @@ let state = {
   todos: [],
   templates: [],
   activeTemplateId: null,
+  openTemplateMenuId: null,
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -76,9 +77,6 @@ const saveStatus = document.querySelector("#saveStatus");
 const newListBtn = document.querySelector("#newListBtn");
 const templateList = document.querySelector("#templateList");
 const activeTemplateName = document.querySelector("#activeTemplateName");
-const renameTemplateBtn = document.querySelector("#renameTemplateBtn");
-const copyTemplateBtn = document.querySelector("#copyTemplateBtn");
-const deleteTemplateBtn = document.querySelector("#deleteTemplateBtn");
 const packingItemForm = document.querySelector("#packingItemForm");
 const packingItemInput = document.querySelector("#packingItemInput");
 const packingItems = document.querySelector("#packingItems");
@@ -227,18 +225,72 @@ function renderTemplates() {
   templateList.innerHTML = "";
 
   state.templates.forEach((template) => {
+    const card = document.createElement("div");
+    card.className = "template-card";
+    card.classList.toggle("active", template.id === state.activeTemplateId);
+    card.classList.toggle("menu-open", template.id === state.openTemplateMenuId);
+
     const tab = document.createElement("button");
     tab.className = "template-tab";
     tab.type = "button";
-    tab.classList.toggle("active", template.id === state.activeTemplateId);
     tab.innerHTML = `<strong></strong><span></span>`;
     tab.querySelector("strong").textContent = template.name;
     tab.querySelector("span").textContent = `${template.items.length} 件`;
     tab.addEventListener("click", () => {
       state.activeTemplateId = template.id;
+      state.openTemplateMenuId = null;
       render();
     });
-    templateList.append(tab);
+
+    const menuButton = document.createElement("button");
+    menuButton.className = "template-menu-button";
+    menuButton.type = "button";
+    menuButton.title = "清单操作";
+    menuButton.textContent = "⋯";
+    menuButton.addEventListener("click", () => {
+      state.activeTemplateId = template.id;
+      state.openTemplateMenuId = state.openTemplateMenuId === template.id ? null : template.id;
+      render();
+    });
+
+    const menu = document.createElement("div");
+    menu.className = "template-menu";
+
+    const renameButton = document.createElement("button");
+    renameButton.type = "button";
+    renameButton.textContent = "重命名";
+    renameButton.addEventListener("click", () => {
+      editText(template.name, async (value) => {
+        state.openTemplateMenuId = null;
+        await updateTemplate(template.id, { name: value || "未命名清单" });
+      });
+    });
+
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.textContent = "复制为新清单";
+    copyButton.addEventListener("click", () => {
+      state.openTemplateMenuId = null;
+      if (state.session) createTemplate(template);
+    });
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "danger-menu-action";
+    deleteButton.textContent = "删除";
+    deleteButton.disabled = state.templates.length <= 1;
+    deleteButton.addEventListener("click", async () => {
+      if (state.templates.length <= 1) return;
+      const confirmed = window.confirm(`删除「${template.name}」？`);
+      if (confirmed) {
+        state.openTemplateMenuId = null;
+        await deleteTemplate(template.id);
+      }
+    });
+
+    menu.append(renameButton, copyButton, deleteButton);
+    card.append(tab, menuButton, menu);
+    templateList.append(card);
   });
 
 }
@@ -250,9 +302,6 @@ function renderEditor() {
     packingItems.innerHTML = "";
     packingCounter.textContent = "0 件";
     packingEmpty.classList.add("visible");
-    renameTemplateBtn.disabled = true;
-    copyTemplateBtn.disabled = true;
-    deleteTemplateBtn.disabled = true;
     return;
   }
 
@@ -282,9 +331,6 @@ function renderEditor() {
   const packedCount = template.items.filter((item) => item.packed).length;
   packingCounter.textContent = `${packedCount}/${template.items.length} 件`;
   packingEmpty.classList.toggle("visible", template.items.length === 0);
-  renameTemplateBtn.disabled = false;
-  copyTemplateBtn.disabled = false;
-  deleteTemplateBtn.disabled = state.templates.length <= 1;
 }
 
 function editText(currentValue, onSave) {
@@ -482,26 +528,6 @@ todoForm.addEventListener("submit", async (event) => {
 
 newListBtn.addEventListener("click", () => {
   if (state.session) createTemplate();
-});
-
-copyTemplateBtn.addEventListener("click", () => {
-  const source = getActiveTemplate();
-  if (source && state.session) createTemplate(source);
-});
-
-renameTemplateBtn.addEventListener("click", () => {
-  const template = getActiveTemplate();
-  if (!template) return;
-  editText(template.name, async (value) => {
-    await updateTemplate(template.id, { name: value || "未命名清单" });
-  });
-});
-
-deleteTemplateBtn.addEventListener("click", async () => {
-  const template = getActiveTemplate();
-  if (!template || state.templates.length <= 1) return;
-  const confirmed = window.confirm(`删除「${template.name}」？`);
-  if (confirmed) await deleteTemplate(template.id);
 });
 
 packingItemForm.addEventListener("submit", async (event) => {

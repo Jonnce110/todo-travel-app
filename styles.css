@@ -360,12 +360,26 @@ select:focus {
   gap: 8px;
 }
 
-.template-tab {
-  width: 100%;
-  min-height: 58px;
+.template-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+}
+
+.template-card.active {
+  border-color: var(--brand);
+  background: var(--soft-green);
+}
+
+.template-tab {
+  width: 100%;
+  min-height: 58px;
+  border: 0;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
   color: var(--ink);
   padding: 10px;
   text-align: left;
@@ -383,9 +397,56 @@ select:focus {
   font-size: 0.82rem;
 }
 
-.template-tab.active {
-  border-color: var(--brand);
-  background: var(--soft-green);
+.template-menu-button {
+  width: 38px;
+  min-height: 58px;
+  border: 0;
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.template-menu-button:hover {
+  background: rgba(23, 107, 98, 0.08);
+  color: var(--brand-dark);
+}
+
+.template-menu {
+  display: none;
+  grid-column: 1 / -1;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  padding: 8px;
+}
+
+.template-card.menu-open .template-menu {
+  display: grid;
+}
+
+.template-menu button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: #f1f5f3;
+  color: var(--ink);
+  font-weight: 800;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.template-menu button:hover {
+  background: var(--soft-amber);
+}
+
+.template-menu button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.template-menu .danger-menu-action {
+  color: var(--danger);
 }
 
 .editor {
@@ -395,7 +456,7 @@ select:focus {
 .template-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
 }
 
