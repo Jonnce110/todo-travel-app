@@ -90,6 +90,11 @@ h3 {
   font-size: 1rem;
 }
 
+#activeTemplateName {
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  line-height: 1.1;
+}
+
 .section-header p {
   margin-bottom: 0;
   color: var(--muted);
@@ -470,6 +475,28 @@ select:focus {
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
+}
+
+.packing-items {
+  gap: 8px;
+}
+
+.tree-item {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.tree-item > .list-item {
+  margin-left: calc(var(--depth, 0) * 28px);
+}
+
+.packing-children {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 @media (max-width: 920px) {

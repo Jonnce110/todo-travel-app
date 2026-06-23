@@ -17,10 +17,10 @@ const defaultTemplates = [
     notes: "适合 3-5 天船宿或海岛潜水。",
     priority: "完整",
     items: [
-      { id: crypto.randomUUID(), title: "潜水电脑", packed: false },
-      { id: crypto.randomUUID(), title: "面镜和呼吸管", packed: false },
-      { id: crypto.randomUUID(), title: "潜水证和日志", packed: false },
-      { id: crypto.randomUUID(), title: "防晒衣", packed: false },
+      { id: crypto.randomUUID(), title: "潜水电脑", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "面镜和呼吸管", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "潜水证和日志", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "防晒衣", packed: false, children: [] },
     ],
   },
   {
@@ -29,9 +29,9 @@ const defaultTemplates = [
     notes: "适合周末海边行程。",
     priority: "标准",
     items: [
-      { id: crypto.randomUUID(), title: "冲浪蜡", packed: false },
-      { id: crypto.randomUUID(), title: "防磨衣", packed: false },
-      { id: crypto.randomUUID(), title: "快干浴巾", packed: false },
+      { id: crypto.randomUUID(), title: "冲浪蜡", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "防磨衣", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "快干浴巾", packed: false, children: [] },
     ],
   },
   {
@@ -40,10 +40,10 @@ const defaultTemplates = [
     notes: "适合雪场短途或跨国滑雪。",
     priority: "完整",
     items: [
-      { id: crypto.randomUUID(), title: "雪镜", packed: false },
-      { id: crypto.randomUUID(), title: "保暖内层", packed: false },
-      { id: crypto.randomUUID(), title: "手套和护具", packed: false },
-      { id: crypto.randomUUID(), title: "雪票或预约凭证", packed: false },
+      { id: crypto.randomUUID(), title: "雪镜", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "保暖内层", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "手套和护具", packed: false, children: [] },
+      { id: crypto.randomUUID(), title: "雪票或预约凭证", packed: false, children: [] },
     ],
   },
 ];
@@ -172,7 +172,7 @@ async function loadCloudData() {
   state.todos = todos;
   state.templates = templates.map((template) => ({
     ...template,
-    items: Array.isArray(template.items) ? template.items : [],
+    items: normalizeItems(template.items),
   }));
   state.activeTemplateId = state.activeTemplateId || state.templates[0]?.id || null;
   render();
@@ -235,7 +235,7 @@ function renderTemplates() {
     tab.type = "button";
     tab.innerHTML = `<strong></strong><span></span>`;
     tab.querySelector("strong").textContent = template.name;
-    tab.querySelector("span").textContent = `${template.items.length} 件`;
+    tab.querySelector("span").textContent = `${countItems(template.items)} 件`;
     tab.addEventListener("click", () => {
       state.activeTemplateId = template.id;
       state.openTemplateMenuId = null;
@@ -309,28 +309,115 @@ function renderEditor() {
 
   packingItems.innerHTML = "";
   template.items.forEach((item) => {
-    const node = document.querySelector("#packingItemTemplate").content.firstElementChild.cloneNode(true);
-    node.classList.toggle("done", item.packed);
-    node.querySelector("input").checked = item.packed;
-    node.querySelector(".item-title").textContent = item.title;
-    node.querySelector("input").addEventListener("change", async (event) => {
-      item.packed = event.target.checked;
-      await updateTemplate(template.id, { items: template.items });
-    });
-    node.querySelector(".edit-action").addEventListener("click", () => editText(item.title, async (value) => {
-      item.title = value;
-      await updateTemplate(template.id, { items: template.items });
-    }));
-    node.querySelector(".delete-action").addEventListener("click", async () => {
-      template.items = template.items.filter((entry) => entry.id !== item.id);
-      await updateTemplate(template.id, { items: template.items });
-    });
-    packingItems.append(node);
+    packingItems.append(renderPackingItem(template, item, 0));
   });
 
-  const packedCount = template.items.filter((item) => item.packed).length;
-  packingCounter.textContent = `${packedCount}/${template.items.length} 件`;
-  packingEmpty.classList.toggle("visible", template.items.length === 0);
+  const packedCount = countPackedItems(template.items);
+  const totalCount = countItems(template.items);
+  packingCounter.textContent = `${packedCount}/${totalCount} 件`;
+  packingEmpty.classList.toggle("visible", totalCount === 0);
+}
+
+function renderPackingItem(template, item, depth) {
+  const wrapper = document.createElement("li");
+  wrapper.className = "tree-item";
+  wrapper.style.setProperty("--depth", depth);
+
+  const row = document.querySelector("#packingItemTemplate").content.firstElementChild.cloneNode(true);
+  row.classList.toggle("done", item.packed);
+  row.querySelector("input").checked = item.packed;
+  row.querySelector(".item-title").textContent = item.title;
+  row.querySelector("input").addEventListener("change", async (event) => {
+    updateItemById(template.items, item.id, (entry) => {
+      entry.packed = event.target.checked;
+    });
+    await updateTemplate(template.id, { items: template.items });
+  });
+  row.querySelector(".edit-action").addEventListener("click", () => editText(item.title, async (value) => {
+    updateItemById(template.items, item.id, (entry) => {
+      entry.title = value;
+    });
+    await updateTemplate(template.id, { items: template.items });
+  }));
+  row.querySelector(".add-child-action").addEventListener("click", async () => {
+    const title = window.prompt("添加分项");
+    if (!title?.trim()) return;
+    updateItemById(template.items, item.id, (entry) => {
+      entry.children = entry.children || [];
+      entry.children.unshift({
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        packed: false,
+        children: [],
+      });
+    });
+    await updateTemplate(template.id, { items: template.items });
+  });
+  row.querySelector(".delete-action").addEventListener("click", async () => {
+    template.items = removeItemById(template.items, item.id);
+    await updateTemplate(template.id, { items: template.items });
+  });
+
+  wrapper.append(row);
+  if (item.children.length > 0) {
+    const children = document.createElement("ul");
+    children.className = "packing-children";
+    item.children.forEach((child) => {
+      children.append(renderPackingItem(template, child, depth + 1));
+    });
+    wrapper.append(children);
+  }
+  return wrapper;
+}
+
+function normalizeItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items.map((item) => ({
+    id: item.id || crypto.randomUUID(),
+    title: item.title || "未命名物品",
+    packed: Boolean(item.packed),
+    children: normalizeItems(item.children),
+  }));
+}
+
+function cloneItems(items) {
+  return normalizeItems(items).map((item) => ({
+    id: crypto.randomUUID(),
+    title: item.title,
+    packed: false,
+    children: cloneItems(item.children),
+  }));
+}
+
+function countItems(items) {
+  return normalizeItems(items).reduce((total, item) => total + 1 + countItems(item.children), 0);
+}
+
+function countPackedItems(items) {
+  return normalizeItems(items).reduce(
+    (total, item) => total + (item.packed ? 1 : 0) + countPackedItems(item.children),
+    0,
+  );
+}
+
+function updateItemById(items, id, updater) {
+  for (const item of items) {
+    if (item.id === id) {
+      updater(item);
+      return true;
+    }
+    if (updateItemById(item.children || [], id, updater)) return true;
+  }
+  return false;
+}
+
+function removeItemById(items, id) {
+  return items
+    .filter((item) => item.id !== id)
+    .map((item) => ({
+      ...item,
+      children: removeItemById(item.children || [], id),
+    }));
 }
 
 function editText(currentValue, onSave) {
@@ -394,17 +481,13 @@ async function createTemplate(source) {
       category: base.category,
       notes: base.notes || "",
       priority: base.priority || "标准",
-      items: base.items.map((item) => ({
-        id: crypto.randomUUID(),
-        title: item.title,
-        packed: false,
-      })),
+      items: cloneItems(base.items),
     })
     .select()
     .single();
 
   if (error) return showCloudError(error);
-  state.templates.unshift({ ...data, items: data.items || [] });
+  state.templates.unshift({ ...data, items: normalizeItems(data.items) });
   state.activeTemplateId = data.id;
   render();
   setStatus("已云端同步");
@@ -420,7 +503,7 @@ async function updateTemplate(id, patch) {
     .single();
   if (error) return showCloudError(error);
   state.templates = state.templates.map((template) =>
-    template.id === id ? { ...data, items: data.items || [] } : template,
+    template.id === id ? { ...data, items: normalizeItems(data.items) } : template,
   );
   render();
   setStatus("已云端同步");
@@ -535,7 +618,7 @@ packingItemForm.addEventListener("submit", async (event) => {
   const template = getActiveTemplate();
   const title = packingItemInput.value.trim();
   if (!template || !title) return;
-  template.items.unshift({ id: crypto.randomUUID(), title, packed: false });
+  template.items.unshift({ id: crypto.randomUUID(), title, packed: false, children: [] });
   packingItemInput.value = "";
   await updateTemplate(template.id, { items: template.items });
 });
