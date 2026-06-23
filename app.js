@@ -60,6 +60,7 @@ const authForm = document.querySelector("#authForm");
 const emailInput = document.querySelector("#emailInput");
 const passwordInput = document.querySelector("#passwordInput");
 const signUpBtn = document.querySelector("#signUpBtn");
+const resendBtn = document.querySelector("#resendBtn");
 const signOutBtn = document.querySelector("#signOutBtn");
 const authMessage = document.querySelector("#authMessage");
 const workspace = document.querySelector(".workspace");
@@ -431,7 +432,28 @@ signUpBtn.addEventListener("click", async () => {
     setAuthMessage(`注册失败：${error.message}`, true);
     return;
   }
-  setAuthMessage("注册成功。如果 Supabase 开启了邮箱确认，请先去邮箱点确认链接。");
+  setAuthMessage("注册成功。请检查收件箱或垃圾邮件；如果没收到，可以点「重发确认邮件」。");
+});
+
+resendBtn.addEventListener("click", async () => {
+  setAuthMessage("");
+  const email = emailInput.value.trim();
+  if (!email) {
+    setAuthMessage("请输入邮箱后再重发确认邮件。", true);
+    return;
+  }
+  const { error } = await supabaseClient.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: APP_URL,
+    },
+  });
+  if (error) {
+    setAuthMessage(`重发失败：${error.message}`, true);
+    return;
+  }
+  setAuthMessage("确认邮件已重新发送。请检查收件箱、垃圾邮件或促销邮件。");
 });
 
 signOutBtn.addEventListener("click", async () => {
