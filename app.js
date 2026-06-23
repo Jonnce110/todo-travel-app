@@ -510,6 +510,9 @@ function removeItemById(items, id) {
 function createInlineEditForm(currentValue, onSave, onCancel) {
   const form = document.createElement("form");
   form.className = "inline-edit-form";
+  form.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
 
   const input = document.createElement("input");
   input.type = "text";
