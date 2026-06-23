@@ -13,8 +13,25 @@
           <p class="eyebrow">Todo & Packing</p>
           <h1>做了么</h1>
         </div>
-        <div class="storage-pill" id="saveStatus">已自动保存</div>
+        <div class="topbar-actions">
+          <div class="storage-pill" id="saveStatus">请先登录</div>
+          <button class="secondary-btn" id="signOutBtn" type="button" hidden>退出</button>
+        </div>
       </header>
+
+      <section class="panel auth-panel" id="authPanel" aria-labelledby="authTitle">
+        <div>
+          <h2 id="authTitle">登录后云端同步</h2>
+          <p>用同一个账号登录，手机和电脑会看到同一份清单。</p>
+        </div>
+        <form class="auth-form" id="authForm">
+          <input id="emailInput" type="email" autocomplete="email" placeholder="邮箱" required />
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="密码" required />
+          <button class="primary-btn" id="signInBtn" type="submit">登录</button>
+          <button class="secondary-btn" id="signUpBtn" type="button">注册</button>
+        </form>
+        <p class="auth-message" id="authMessage"></p>
+      </section>
 
       <main class="workspace">
         <section class="panel todo-panel" aria-labelledby="todoTitle">
@@ -143,6 +160,7 @@
       </li>
     </template>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app.js"></script>
   </body>
 </html>
