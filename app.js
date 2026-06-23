@@ -59,6 +59,8 @@ let state = {
   editingPackingItemId: null,
   renamingTemplateId: null,
   confirmingDeleteTemplateId: null,
+  confirmingDeleteTodoId: null,
+  confirmingDeletePackingItemId: null,
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -228,9 +230,19 @@ function renderTodos() {
       state.editingTodoId = todo.id;
       render();
     });
-    node.querySelector(".delete-action").addEventListener("click", async () => {
-      await deleteTodo(todo.id);
+    node.querySelector(".delete-action").addEventListener("click", () => {
+      state.confirmingDeleteTodoId = todo.id;
+      render();
     });
+    if (state.confirmingDeleteTodoId === todo.id) {
+      node.append(createDeleteConfirmRow(async () => {
+        state.confirmingDeleteTodoId = null;
+        await deleteTodo(todo.id);
+      }, () => {
+        state.confirmingDeleteTodoId = null;
+        render();
+      }));
+    }
     todoList.append(node);
   });
   const activeCount = state.todos.filter((todo) => !todo.done).length;
@@ -375,12 +387,25 @@ function renderPackingItem(template, item, depth) {
     state.addingChildForItemId = state.addingChildForItemId === item.id ? null : item.id;
     render();
   });
-  row.querySelector(".delete-action").addEventListener("click", async () => {
-    template.items = removeItemById(template.items, item.id);
-    await updateTemplate(template.id, { items: template.items });
+  row.querySelector(".delete-action").addEventListener("click", () => {
+    state.confirmingDeletePackingItemId = item.id;
+    render();
   });
 
   wrapper.append(row);
+  if (state.confirmingDeletePackingItemId === item.id) {
+    const confirmRow = createDeleteConfirmRow(async () => {
+      state.confirmingDeletePackingItemId = null;
+      template.items = removeItemById(template.items, item.id);
+      await updateTemplate(template.id, { items: template.items });
+    }, () => {
+      state.confirmingDeletePackingItemId = null;
+      render();
+    });
+    confirmRow.classList.add("tree-inline-form");
+    confirmRow.style.setProperty("--depth", depth);
+    wrapper.append(confirmRow);
+  }
   if (state.editingPackingItemId === item.id) {
     wrapper.append(renderPackingEditInput(template, item, depth));
   }
