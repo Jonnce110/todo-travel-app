@@ -11,6 +11,11 @@
 
 在 Supabase 项目的 `SQL Editor` 里运行 `supabase-schema.sql` 一次，用来创建数据表和账号级数据隔离策略。
 
+在 `Authentication` -> `URL Configuration` 里设置：
+
+- Site URL: `https://jonnce110.github.io/todo-travel-app/`
+- Redirect URLs: `https://jonnce110.github.io/todo-travel-app/`
+
 ## 使用方式
 
 直接用浏览器打开 `index.html` 即可。

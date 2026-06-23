@@ -1,4 +1,5 @@
 const SUPABASE_URL = "https://buwqmzdqxcyudkwmxzrd.supabase.co";
+const APP_URL = "https://jonnce110.github.io/todo-travel-app/";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1d3FtemRxeGN5dWRrd214enJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjA4ODIsImV4cCI6MjA5Nzc5Njg4Mn0.AWvrQyxp0eH7Wmj2UZwQapz4gCGRGKCFMWlmBiNTqNk";
 
@@ -419,7 +420,13 @@ signUpBtn.addEventListener("click", async () => {
     setAuthMessage("请输入邮箱和密码。", true);
     return;
   }
-  const { error } = await supabaseClient.auth.signUp({ email, password });
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: APP_URL,
+    },
+  });
   if (error) {
     setAuthMessage(`注册失败：${error.message}`, true);
     return;
