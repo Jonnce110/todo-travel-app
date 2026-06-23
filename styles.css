@@ -100,9 +100,10 @@ h3 {
 }
 
 #activeTemplateName {
-  font-size: clamp(1.75rem, 3.2vw, 2.7rem);
-  line-height: 1.1;
+  font-size: clamp(1.28rem, 2vw, 1.72rem);
+  line-height: 1.18;
   letter-spacing: 0;
+  font-weight: 850;
 }
 
 .section-header p {
@@ -117,8 +118,8 @@ h3 {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.8);
   color: var(--muted);
-  padding: 8px 12px;
-  font-size: 0.86rem;
+  padding: 7px 11px;
+  font-size: 0.82rem;
   font-weight: 700;
   box-shadow: var(--shadow-soft);
 }
@@ -368,6 +369,8 @@ select:focus {
   flex: 1 1 auto;
   overflow-wrap: anywhere;
   min-width: 0;
+  font-size: 0.98rem;
+  line-height: 1.35;
 }
 
 .list-item.done .item-title {
@@ -464,10 +467,16 @@ select:focus {
   overflow-wrap: anywhere;
 }
 
+.template-tab strong {
+  font-size: 1.04rem;
+  line-height: 1.25;
+  font-weight: 850;
+}
+
 .template-tab span {
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
 }
 
 .template-menu-button {
@@ -505,6 +514,7 @@ select:focus {
   border-radius: 6px;
   background: #f1f5f3;
   color: var(--ink);
+  font-size: 0.92rem;
   font-weight: 800;
   text-align: left;
   padding: 0 10px;
@@ -573,6 +583,14 @@ select:focus {
 
 .tree-item > .list-item {
   margin-left: calc(var(--depth, 0) * 28px);
+}
+
+.tree-item[style*="--depth: 1"] .item-title,
+.tree-item[style*="--depth: 2"] .item-title,
+.tree-item[style*="--depth: 3"] .item-title,
+.tree-item[style*="--depth: 4"] .item-title,
+.tree-item[style*="--depth: 5"] .item-title {
+  font-size: 0.94rem;
 }
 
 .tree-item > .list-item::before {
