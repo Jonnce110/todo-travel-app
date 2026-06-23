@@ -429,7 +429,7 @@ signUpBtn.addEventListener("click", async () => {
     },
   });
   if (error) {
-    setAuthMessage(`注册失败：${error.message}`, true);
+    setAuthMessage(`注册失败：${error.message}。如果刚更新过 SQL，请重新运行 supabase-schema.sql 后再试。`, true);
     return;
   }
 
