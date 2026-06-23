@@ -630,6 +630,14 @@ select:focus {
   background: #fff;
 }
 
+.tree-inline-form {
+  margin-left: calc(var(--depth, 0) * 28px);
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
 @media (max-width: 920px) {
   .auth-panel,
   .auth-form {

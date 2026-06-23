@@ -360,21 +360,7 @@ function renderPackingItem(template, item, depth) {
   const row = document.querySelector("#packingItemTemplate").content.firstElementChild.cloneNode(true);
   row.classList.toggle("done", item.packed);
   row.querySelector("input").checked = item.packed;
-  const titleSlot = row.querySelector(".item-title");
-  if (state.editingPackingItemId === item.id) {
-    titleSlot.replaceChildren(createInlineEditForm(item.title, async (value) => {
-      updateItemById(template.items, item.id, (entry) => {
-        entry.title = value;
-      });
-      state.editingPackingItemId = null;
-      await updateTemplate(template.id, { items: template.items });
-    }, () => {
-      state.editingPackingItemId = null;
-      render();
-    }));
-  } else {
-    titleSlot.textContent = item.title;
-  }
+  row.querySelector(".item-title").textContent = item.title;
   row.querySelector("input").addEventListener("change", async (event) => {
     updateItemById(template.items, item.id, (entry) => {
       entry.packed = event.target.checked;
@@ -395,6 +381,9 @@ function renderPackingItem(template, item, depth) {
   });
 
   wrapper.append(row);
+  if (state.editingPackingItemId === item.id) {
+    wrapper.append(renderPackingEditInput(template, item, depth));
+  }
   if (state.addingChildForItemId === item.id) {
     wrapper.append(renderChildInput(template, item, depth + 1));
   }
@@ -407,6 +396,23 @@ function renderPackingItem(template, item, depth) {
     wrapper.append(children);
   }
   return wrapper;
+}
+
+function renderPackingEditInput(template, item, depth) {
+  const form = createInlineEditForm(item.title, async (value) => {
+    updateItemById(template.items, item.id, (entry) => {
+      entry.title = value;
+    });
+    state.editingPackingItemId = null;
+    await updateTemplate(template.id, { items: template.items });
+  }, () => {
+    state.editingPackingItemId = null;
+    render();
+  });
+
+  form.classList.add("tree-inline-form");
+  form.style.setProperty("--depth", depth);
+  return form;
 }
 
 function renderChildInput(template, parentItem, depth) {
