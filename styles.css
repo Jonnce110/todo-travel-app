@@ -930,16 +930,27 @@ select:focus {
 
   .packing-group-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
     padding: 8px;
   }
 
   .packing-group-row .check-row {
+    width: 100%;
     min-width: 0;
   }
 
+  .packing-group-row .item-title {
+    flex: 1 1 auto;
+    min-width: 4em;
+  }
+
+  .packing-group-row .group-count {
+    margin-left: auto;
+  }
+
   .packing-group-row .item-actions {
+    justify-content: flex-end;
     gap: 4px;
   }
 
