@@ -708,16 +708,19 @@ select:focus {
 
 .packing-card > .list-item {
   position: relative;
-  display: block;
-  min-height: 62px;
+  display: flex;
+  align-items: center;
+  min-height: 52px;
   margin-left: 0;
-  padding: 10px 40px 10px 10px;
+  padding: 9px 34px 9px 10px;
   border-color: var(--line);
-  background: var(--panel-soft);
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(28, 44, 38, 0.04);
 }
 
 .packing-card > .list-item:hover {
-  background: #fff;
+  border-color: var(--line-strong);
+  background: #fbfdfc;
 }
 
 .packing-card > .list-item::before {
@@ -725,22 +728,46 @@ select:focus {
 }
 
 .packing-card .check-row {
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+  min-height: 30px;
 }
 
 .packing-card .item-actions {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
 }
 
 .packing-card .icon-btn {
-  width: 28px;
-  min-height: 28px;
-  flex-basis: 28px;
-  border-radius: 6px;
-  font-size: 0.92rem;
+  width: 24px;
+  min-height: 24px;
+  flex-basis: 24px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.86rem;
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.packing-card > .list-item:hover .icon-btn,
+.packing-card > .list-item:focus-within .icon-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.packing-card .icon-btn:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.packing-card .item-title {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  padding-right: 2px;
 }
 
 .packing-card .packing-children {
@@ -750,8 +777,15 @@ select:focus {
 }
 
 .packing-card .packing-card > .list-item {
-  min-height: 54px;
-  padding: 8px 36px 8px 8px;
+  min-height: 46px;
+  padding: 8px 32px 8px 8px;
+}
+
+@media (hover: none) {
+  .packing-card .icon-btn {
+    opacity: 0.42;
+    transform: none;
+  }
 }
 
 .inline-child-form {
