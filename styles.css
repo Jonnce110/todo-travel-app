@@ -750,6 +750,7 @@ select:focus {
   align-items: center;
   gap: 8px;
   min-height: 30px;
+  min-width: 0;
 }
 
 .packing-card .item-actions {
@@ -784,8 +785,12 @@ select:focus {
 
 .packing-card .item-title {
   display: block;
+  min-width: 0;
+  overflow: hidden;
   padding-right: 2px;
   line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .packing-card .packing-children {
