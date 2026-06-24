@@ -697,7 +697,7 @@ select:focus {
 
 .child-card-grid {
   grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 8px;
   padding: 4px 2px 2px;
 }
@@ -707,13 +707,14 @@ select:focus {
 }
 
 .child-card-grid > .packing-card {
-  height: auto;
+  height: 100%;
 }
 
 .packing-card > .list-item {
   position: relative;
   display: flex;
   align-items: center;
+  height: 100%;
   min-height: 52px;
   margin-left: 0;
   padding: 9px 34px 9px 10px;
@@ -768,10 +769,9 @@ select:focus {
 }
 
 .packing-card .item-title {
-  display: flex;
-  align-items: center;
-  min-height: 30px;
+  display: block;
   padding-right: 2px;
+  line-height: 1.28;
 }
 
 .packing-card .packing-children {
