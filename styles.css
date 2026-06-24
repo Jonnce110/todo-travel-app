@@ -636,9 +636,32 @@ select:focus {
   box-shadow: none;
 }
 
+.packing-group-row[draggable="true"] {
+  cursor: grab;
+}
+
+.packing-group-row[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 .packing-group-row:hover {
   border-color: rgba(28, 112, 102, 0.2);
   background: #edf8f4;
+}
+
+.packing-group-row.dragging {
+  opacity: 0.48;
+}
+
+.packing-group-row.drag-over-before {
+  border-top-color: var(--accent);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.packing-group-row.drag-over-after {
+  border-bottom-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+  background: var(--soft-amber);
 }
 
 .packing-group-row .item-title {

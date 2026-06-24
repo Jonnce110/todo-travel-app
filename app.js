@@ -71,6 +71,7 @@ let state = {
   confirmingDeleteTodoId: null,
   confirmingDeletePackingItemId: null,
   collapsedPackingItemIds: new Set(),
+  draggingPackingItemId: null,
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -422,6 +423,47 @@ function renderPackingItem(template, item, depth) {
   const childCount = countItems(item.children);
   const packedChildCount = countPackedItems(item.children);
   if (depth === 0) {
+    row.draggable = Boolean(state.session);
+    if (row.draggable) {
+      row.title = "拖动调整一级目录顺序";
+      row.addEventListener("dragstart", (event) => {
+        state.draggingPackingItemId = item.id;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", item.id);
+        row.classList.add("dragging");
+      });
+      row.addEventListener("dragover", (event) => {
+        if (!state.draggingPackingItemId || state.draggingPackingItemId === item.id) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        const rect = row.getBoundingClientRect();
+        const dropPosition = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+        row.dataset.dropPosition = dropPosition;
+        row.classList.toggle("drag-over-before", dropPosition === "before");
+        row.classList.toggle("drag-over-after", dropPosition === "after");
+      });
+      row.addEventListener("dragleave", () => {
+        row.classList.remove("drag-over-before", "drag-over-after");
+        delete row.dataset.dropPosition;
+      });
+      row.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        const dropPosition = row.dataset.dropPosition || "before";
+        row.classList.remove("drag-over-before", "drag-over-after");
+        delete row.dataset.dropPosition;
+        const draggedItemId = event.dataTransfer.getData("text/plain") || state.draggingPackingItemId;
+        state.draggingPackingItemId = null;
+        if (!draggedItemId || draggedItemId === item.id) return;
+        template.items = moveTopLevelItem(template.items, draggedItemId, item.id, dropPosition);
+        await updateTemplate(template.id, { items: template.items });
+      });
+      row.addEventListener("dragend", () => {
+        state.draggingPackingItemId = null;
+        row.classList.remove("dragging", "drag-over-before", "drag-over-after");
+        delete row.dataset.dropPosition;
+      });
+    }
+
     const collapseButton = document.createElement("button");
     collapseButton.className = "icon-btn collapse-action";
     collapseButton.type = "button";
@@ -628,6 +670,19 @@ function removeItemById(items, id) {
       ...item,
       children: removeItemById(item.children || [], id),
     }));
+}
+
+function moveTopLevelItem(items, draggedItemId, targetItemId, dropPosition) {
+  const nextItems = [...items];
+  const fromIndex = nextItems.findIndex((item) => item.id === draggedItemId);
+  const toIndex = nextItems.findIndex((item) => item.id === targetItemId);
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return items;
+
+  const [draggedItem] = nextItems.splice(fromIndex, 1);
+  const targetIndex = nextItems.findIndex((item) => item.id === targetItemId);
+  const insertIndex = dropPosition === "after" ? targetIndex + 1 : targetIndex;
+  nextItems.splice(insertIndex, 0, draggedItem);
+  return nextItems;
 }
 
 function createInlineEditForm(currentValue, onSave, onCancel) {
