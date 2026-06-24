@@ -402,6 +402,9 @@ function renderPackingItem(template, item, depth) {
     meta.className = "group-count";
     meta.textContent = childCount > 0 ? `${packedChildCount}/${childCount} 分项` : "无分项";
     row.querySelector(".check-row").append(meta);
+  } else {
+    row.querySelector(".add-child-action").remove();
+    row.querySelector(".edit-action").remove();
   }
 
   row.querySelector("input").addEventListener("change", async (event) => {
@@ -410,14 +413,20 @@ function renderPackingItem(template, item, depth) {
     });
     await updateTemplate(template.id, { items: template.items });
   });
-  row.querySelector(".edit-action").addEventListener("click", () => {
-    state.editingPackingItemId = item.id;
-    render();
-  });
-  row.querySelector(".add-child-action").addEventListener("click", () => {
-    state.addingChildForItemId = state.addingChildForItemId === item.id ? null : item.id;
-    render();
-  });
+  const editButton = row.querySelector(".edit-action");
+  const addChildButton = row.querySelector(".add-child-action");
+  if (editButton) {
+    editButton.addEventListener("click", () => {
+      state.editingPackingItemId = item.id;
+      render();
+    });
+  }
+  if (addChildButton) {
+    addChildButton.addEventListener("click", () => {
+      state.addingChildForItemId = state.addingChildForItemId === item.id ? null : item.id;
+      render();
+    });
+  }
   row.querySelector(".delete-action").addEventListener("click", () => {
     state.confirmingDeletePackingItemId = item.id;
     render();
