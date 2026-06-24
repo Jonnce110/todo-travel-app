@@ -5,45 +5,54 @@ const SUPABASE_ANON_KEY =
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const defaultTodos = [
-  { title: "确认下次旅行日期", done: false },
-  { title: "整理证件和保险信息", done: false },
-];
+const defaultTodos = [];
 
 const defaultTemplates = [
   {
-    name: "潜水出行",
-    category: "潜水",
-    notes: "适合 3-5 天船宿或海岛潜水。",
-    priority: "完整",
+    name: "基础GO",
+    category: "通用",
+    notes: "适合大多数短途和长途出行的基础清单。",
+    priority: "基础",
     items: [
-      { id: crypto.randomUUID(), title: "潜水电脑", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "面镜和呼吸管", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "潜水证和日志", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "防晒衣", packed: false, children: [] },
-    ],
-  },
-  {
-    name: "冲浪出行",
-    category: "冲浪",
-    notes: "适合周末海边行程。",
-    priority: "标准",
-    items: [
-      { id: crypto.randomUUID(), title: "冲浪蜡", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "防磨衣", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "快干浴巾", packed: false, children: [] },
-    ],
-  },
-  {
-    name: "滑雪出行",
-    category: "滑雪",
-    notes: "适合雪场短途或跨国滑雪。",
-    priority: "完整",
-    items: [
-      { id: crypto.randomUUID(), title: "雪镜", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "保暖内层", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "手套和护具", packed: false, children: [] },
-      { id: crypto.randomUUID(), title: "雪票或预约凭证", packed: false, children: [] },
+      {
+        id: crypto.randomUUID(),
+        title: "证件",
+        packed: false,
+        children: [
+          { id: crypto.randomUUID(), title: "身份证/护照", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "签证/通行证", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "机票/酒店确认单", packed: false, children: [] },
+        ],
+      },
+      {
+        id: crypto.randomUUID(),
+        title: "支付",
+        packed: false,
+        children: [
+          { id: crypto.randomUUID(), title: "银行卡", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "少量现金", packed: false, children: [] },
+        ],
+      },
+      {
+        id: crypto.randomUUID(),
+        title: "电子设备",
+        packed: false,
+        children: [
+          { id: crypto.randomUUID(), title: "手机充电器", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "充电宝", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "转换插头", packed: false, children: [] },
+        ],
+      },
+      {
+        id: crypto.randomUUID(),
+        title: "随身物品",
+        packed: false,
+        children: [
+          { id: crypto.randomUUID(), title: "纸巾/湿巾", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "常用药", packed: false, children: [] },
+          { id: crypto.randomUUID(), title: "水杯", packed: false, children: [] },
+        ],
+      },
     ],
   },
 ];
@@ -72,6 +81,7 @@ const signUpBtn = document.querySelector("#signUpBtn");
 const signOutBtn = document.querySelector("#signOutBtn");
 const authMessage = document.querySelector("#authMessage");
 const workspace = document.querySelector(".workspace");
+const viewTabsNav = document.querySelector(".view-tabs");
 const viewTabs = document.querySelectorAll("[data-view-tab]");
 const viewPanels = document.querySelectorAll("[data-view-panel]");
 
@@ -105,6 +115,8 @@ function getActiveTemplate() {
 }
 
 function setActiveView(view) {
+  if (!state.session && view !== "packing") return;
+
   viewTabs.forEach((tab) => {
     const active = tab.dataset.viewTab === view;
     tab.classList.toggle("active", active);
@@ -117,7 +129,6 @@ function setActiveView(view) {
 }
 
 async function init() {
-  setActiveView("todo");
   const { data } = await supabaseClient.auth.getSession();
   state.session = data.session;
   updateAuthUi();
@@ -128,31 +139,54 @@ async function init() {
     if (session) {
       await loadCloudData();
     } else {
-      state.todos = [];
-      state.templates = [];
-      state.activeTemplateId = null;
-      render();
+      loadGuestData();
     }
   });
 
   if (state.session) {
+    setActiveView("todo");
     await loadCloudData();
   } else {
-    render();
+    loadGuestData();
   }
 }
 
 function updateAuthUi() {
   const signedIn = Boolean(state.session);
   authPanel.hidden = signedIn;
-  workspace.classList.toggle("locked", !signedIn);
+  workspace.classList.toggle("locked", false);
+  workspace.classList.toggle("readonly", !signedIn);
+  viewTabsNav.classList.toggle("single-tab", !signedIn);
   signOutBtn.hidden = !signedIn;
+  newListBtn.hidden = !signedIn;
+  packingItemForm.hidden = !signedIn;
+  viewTabs.forEach((tab) => {
+    tab.hidden = !signedIn && tab.dataset.viewTab !== "packing";
+  });
   if (signedIn) {
     setStatus(`已登录：${state.session.user.email}`);
     setAuthMessage("");
   } else {
-    setStatus("请先登录");
+    setStatus("访客预览：基础GO");
   }
+}
+
+function loadGuestData() {
+  state.todos = [];
+  state.templates = defaultTemplates.map((template, index) => ({
+    ...template,
+    id: `guest-template-${index}`,
+    items: cloneItems(template.items),
+  }));
+  state.activeTemplateId = state.templates[0]?.id || null;
+  state.openTemplateMenuId = null;
+  state.addingChildForItemId = null;
+  state.editingPackingItemId = null;
+  state.renamingTemplateId = null;
+  state.confirmingDeleteTemplateId = null;
+  state.confirmingDeletePackingItemId = null;
+  setActiveView("packing");
+  render();
 }
 
 async function loadCloudData() {
@@ -189,15 +223,19 @@ async function loadCloudData() {
 
 async function seedDefaultData() {
   const userId = state.session.user.id;
-  await Promise.all([
-    supabaseClient.from("todos").insert(defaultTodos.map((todo) => ({ ...todo, user_id: userId }))),
+  const inserts = [];
+  if (defaultTodos.length > 0) {
+    inserts.push(supabaseClient.from("todos").insert(defaultTodos.map((todo) => ({ ...todo, user_id: userId }))));
+  }
+  inserts.push(
     supabaseClient.from("packing_lists").insert(
       defaultTemplates.map((template) => ({
         ...template,
         user_id: userId,
       })),
     ),
-  ]);
+  );
+  await Promise.all(inserts);
 }
 
 function render() {
@@ -277,6 +315,7 @@ function renderTemplates() {
     menuButton.type = "button";
     menuButton.title = "清单操作";
     menuButton.textContent = "⋯";
+    menuButton.hidden = !state.session;
     menuButton.addEventListener("click", () => {
       state.activeTemplateId = template.id;
       state.openTemplateMenuId = state.openTemplateMenuId === template.id ? null : template.id;
@@ -377,6 +416,7 @@ function renderPackingItem(template, item, depth) {
   row.classList.toggle("packing-card-item", depth > 0);
   row.classList.toggle("done", item.packed);
   row.querySelector("input").checked = item.packed;
+  row.querySelector("input").disabled = !state.session;
   row.querySelector(".item-title").textContent = item.title;
 
   const childCount = countItems(item.children);
@@ -402,12 +442,21 @@ function renderPackingItem(template, item, depth) {
     meta.className = "group-count";
     meta.textContent = childCount > 0 ? `${packedChildCount}/${childCount} 分项` : "无分项";
     row.querySelector(".check-row").append(meta);
+    if (!state.session) {
+      row.querySelector(".add-child-action").remove();
+      row.querySelector(".edit-action").remove();
+      row.querySelector(".delete-action").remove();
+    }
   } else {
     row.querySelector(".add-child-action").remove();
     row.querySelector(".edit-action").remove();
+    if (!state.session) {
+      row.querySelector(".delete-action").remove();
+    }
   }
 
   row.querySelector("input").addEventListener("change", async (event) => {
+    if (!state.session) return;
     updateItemById(template.items, item.id, (entry) => {
       entry.packed = event.target.checked;
     });
@@ -427,10 +476,13 @@ function renderPackingItem(template, item, depth) {
       render();
     });
   }
-  row.querySelector(".delete-action").addEventListener("click", () => {
-    state.confirmingDeletePackingItemId = item.id;
-    render();
-  });
+  const deleteButton = row.querySelector(".delete-action");
+  if (deleteButton) {
+    deleteButton.addEventListener("click", () => {
+      state.confirmingDeletePackingItemId = item.id;
+      render();
+    });
+  }
 
   wrapper.append(row);
   if (state.confirmingDeletePackingItemId === item.id) {

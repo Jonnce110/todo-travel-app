@@ -147,6 +147,10 @@ h3 {
   backdrop-filter: blur(10px);
 }
 
+.view-tabs.single-tab {
+  grid-template-columns: 1fr;
+}
+
 .view-tab {
   min-height: 40px;
   border: 0;
