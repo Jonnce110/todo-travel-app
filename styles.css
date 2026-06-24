@@ -668,7 +668,12 @@ select:focus {
 }
 
 .packing-group-row .item-title {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: normal;
   font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .group-count {
@@ -913,6 +918,41 @@ select:focus {
   .template-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .packing-panel {
+    padding: 14px;
+  }
+
+  .packing-group {
+    padding: 6px;
+  }
+
+  .packing-group-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .packing-group-row .check-row {
+    min-width: 0;
+  }
+
+  .packing-group-row .item-actions {
+    gap: 4px;
+  }
+
+  .packing-group-row .icon-btn {
+    width: 32px;
+    min-height: 32px;
+    flex-basis: 32px;
+  }
+
+  .packing-group-row .collapse-action {
+    width: 26px;
+    min-height: 26px;
+    flex-basis: 26px;
   }
 
   .input-row,
