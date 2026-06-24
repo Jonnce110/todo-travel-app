@@ -440,7 +440,7 @@ function renderPackingItem(template, item, depth) {
 
     const meta = document.createElement("span");
     meta.className = "group-count";
-    meta.textContent = childCount > 0 ? `${packedChildCount}/${childCount}` : "无";
+    meta.textContent = `${packedChildCount}/${childCount}`;
     row.querySelector(".check-row").append(meta);
     if (!state.session) {
       row.querySelector(".add-child-action").remove();
