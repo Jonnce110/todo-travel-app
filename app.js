@@ -436,7 +436,7 @@ function renderPackingItem(template, item, depth) {
       }
       render();
     });
-    row.querySelector(".item-actions").prepend(collapseButton);
+    row.querySelector(".check-row").prepend(collapseButton);
 
     const meta = document.createElement("span");
     meta.className = "group-count";

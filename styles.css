@@ -661,6 +661,20 @@ select:focus {
   opacity: 0.42;
 }
 
+.packing-group-row .collapse-action {
+  width: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--brand-dark);
+  font-size: 0.9rem;
+}
+
+.packing-group-row .collapse-action:hover {
+  background: #fff;
+}
+
 .tree-item[style*="--depth: 1"] .item-title,
 .tree-item[style*="--depth: 2"] .item-title,
 .tree-item[style*="--depth: 3"] .item-title,
