@@ -930,7 +930,7 @@ select:focus {
 
   .packing-group-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(112px, 1fr) auto;
     gap: 6px;
     padding: 8px;
   }
@@ -938,11 +938,12 @@ select:focus {
   .packing-group-row .check-row {
     width: 100%;
     min-width: 0;
+    gap: 6px;
   }
 
   .packing-group-row .item-title {
-    flex: 1 1 auto;
-    min-width: 4em;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .packing-group-row .group-count {
@@ -955,15 +956,15 @@ select:focus {
   }
 
   .packing-group-row .icon-btn {
-    width: 32px;
-    min-height: 32px;
-    flex-basis: 32px;
+    width: 28px;
+    min-height: 28px;
+    flex-basis: 28px;
   }
 
   .packing-group-row .collapse-action {
-    width: 26px;
-    min-height: 26px;
-    flex-basis: 26px;
+    width: 24px;
+    min-height: 24px;
+    flex-basis: 24px;
   }
 
   .input-row,
