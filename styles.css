@@ -640,7 +640,8 @@ select:focus {
   cursor: grab;
 }
 
-.packing-group-row[draggable="true"]:active {
+.packing-group-row[draggable="true"]:active,
+.packing-card-item[draggable="true"]:active {
   cursor: grabbing;
 }
 
@@ -653,12 +654,14 @@ select:focus {
   opacity: 0.48;
 }
 
-.packing-group-row.drag-over-before {
+.packing-group-row.drag-over-before,
+.packing-card-item.drag-over-before {
   border-top-color: var(--accent);
   box-shadow: inset 0 3px 0 var(--accent);
 }
 
-.packing-group-row.drag-over-after {
+.packing-group-row.drag-over-after,
+.packing-card-item.drag-over-after {
   border-bottom-color: var(--accent);
   box-shadow: inset 0 -3px 0 var(--accent);
   background: var(--soft-amber);
@@ -758,6 +761,14 @@ select:focus {
   border-color: var(--line);
   background: #fff;
   box-shadow: 0 1px 0 rgba(28, 44, 38, 0.04);
+}
+
+.packing-card > .list-item[draggable="true"] {
+  cursor: grab;
+}
+
+.packing-card > .list-item.dragging {
+  opacity: 0.48;
 }
 
 .packing-card > .list-item:hover {

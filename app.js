@@ -396,7 +396,7 @@ function renderEditor() {
 
   packingItems.innerHTML = "";
   template.items.forEach((item) => {
-    packingItems.append(renderPackingItem(template, item, 0));
+    packingItems.append(renderPackingItem(template, item, 0, template.items));
   });
 
   const packedCount = countPackedItems(template.items);
@@ -405,7 +405,7 @@ function renderEditor() {
   packingEmpty.classList.toggle("visible", totalCount === 0);
 }
 
-function renderPackingItem(template, item, depth) {
+function renderPackingItem(template, item, depth, siblingItems) {
   const wrapper = document.createElement("li");
   wrapper.className = "tree-item";
   wrapper.classList.toggle("packing-group", depth === 0);
@@ -422,48 +422,50 @@ function renderPackingItem(template, item, depth) {
 
   const childCount = countItems(item.children);
   const packedChildCount = countPackedItems(item.children);
-  if (depth === 0) {
-    row.draggable = Boolean(state.session);
-    if (row.draggable) {
-      row.title = "拖动调整一级目录顺序";
-      row.addEventListener("dragstart", (event) => {
-        state.draggingPackingItemId = item.id;
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", item.id);
-        row.classList.add("dragging");
-      });
-      row.addEventListener("dragover", (event) => {
-        if (!state.draggingPackingItemId || state.draggingPackingItemId === item.id) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-        const rect = row.getBoundingClientRect();
-        const dropPosition = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
-        row.dataset.dropPosition = dropPosition;
-        row.classList.toggle("drag-over-before", dropPosition === "before");
-        row.classList.toggle("drag-over-after", dropPosition === "after");
-      });
-      row.addEventListener("dragleave", () => {
-        row.classList.remove("drag-over-before", "drag-over-after");
-        delete row.dataset.dropPosition;
-      });
-      row.addEventListener("drop", async (event) => {
-        event.preventDefault();
-        const dropPosition = row.dataset.dropPosition || "before";
-        row.classList.remove("drag-over-before", "drag-over-after");
-        delete row.dataset.dropPosition;
-        const draggedItemId = event.dataTransfer.getData("text/plain") || state.draggingPackingItemId;
-        state.draggingPackingItemId = null;
-        if (!draggedItemId || draggedItemId === item.id) return;
-        template.items = moveTopLevelItem(template.items, draggedItemId, item.id, dropPosition);
-        await updateTemplate(template.id, { items: template.items });
-      });
-      row.addEventListener("dragend", () => {
-        state.draggingPackingItemId = null;
-        row.classList.remove("dragging", "drag-over-before", "drag-over-after");
-        delete row.dataset.dropPosition;
-      });
-    }
+  if (state.session) {
+    row.draggable = true;
+    row.title = depth === 0 ? "拖动调整一级目录顺序" : "拖动调整本组子项顺序";
+    row.addEventListener("dragstart", (event) => {
+      state.draggingPackingItemId = item.id;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", item.id);
+      row.classList.add("dragging");
+    });
+    row.addEventListener("dragover", (event) => {
+      if (!state.draggingPackingItemId || state.draggingPackingItemId === item.id) return;
+      if (!siblingItems.some((entry) => entry.id === state.draggingPackingItemId)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      const rect = row.getBoundingClientRect();
+      const dropPosition = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+      row.dataset.dropPosition = dropPosition;
+      row.classList.toggle("drag-over-before", dropPosition === "before");
+      row.classList.toggle("drag-over-after", dropPosition === "after");
+    });
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drag-over-before", "drag-over-after");
+      delete row.dataset.dropPosition;
+    });
+    row.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      const dropPosition = row.dataset.dropPosition || "before";
+      row.classList.remove("drag-over-before", "drag-over-after");
+      delete row.dataset.dropPosition;
+      const draggedItemId = event.dataTransfer.getData("text/plain") || state.draggingPackingItemId;
+      state.draggingPackingItemId = null;
+      if (!draggedItemId || draggedItemId === item.id) return;
+      const nextItems = moveSiblingItem(siblingItems, draggedItemId, item.id, dropPosition);
+      siblingItems.splice(0, siblingItems.length, ...nextItems);
+      await updateTemplate(template.id, { items: template.items });
+    });
+    row.addEventListener("dragend", () => {
+      state.draggingPackingItemId = null;
+      row.classList.remove("dragging", "drag-over-before", "drag-over-after");
+      delete row.dataset.dropPosition;
+    });
+  }
 
+  if (depth === 0) {
     const collapseButton = document.createElement("button");
     collapseButton.className = "icon-btn collapse-action";
     collapseButton.type = "button";
@@ -550,7 +552,7 @@ function renderPackingItem(template, item, depth) {
     const children = document.createElement("ul");
     children.className = depth === 0 ? "packing-children child-card-grid" : "packing-children";
     item.children.forEach((child) => {
-      children.append(renderPackingItem(template, child, depth + 1));
+      children.append(renderPackingItem(template, child, depth + 1, item.children));
     });
     wrapper.append(children);
   }
@@ -672,7 +674,7 @@ function removeItemById(items, id) {
     }));
 }
 
-function moveTopLevelItem(items, draggedItemId, targetItemId, dropPosition) {
+function moveSiblingItem(items, draggedItemId, targetItemId, dropPosition) {
   const nextItems = [...items];
   const fromIndex = nextItems.findIndex((item) => item.id === draggedItemId);
   const toIndex = nextItems.findIndex((item) => item.id === targetItemId);
