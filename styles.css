@@ -929,21 +929,24 @@ select:focus {
   }
 
   .packing-group-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
     gap: 4px;
     padding: 7px;
   }
 
   .packing-group-row .check-row {
-    width: 100%;
+    flex: 1 1 auto;
+    width: auto;
     min-width: 0;
     gap: 5px;
   }
 
   .packing-group-row .item-title {
     flex: 1 1 0;
-    min-width: 72px;
+    min-width: 0;
   }
 
   .packing-group-row .group-count {
@@ -951,6 +954,7 @@ select:focus {
   }
 
   .packing-group-row .item-actions {
+    flex: 0 0 auto;
     justify-content: flex-end;
     gap: 3px;
   }
