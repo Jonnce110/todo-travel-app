@@ -930,41 +930,41 @@ select:focus {
 
   .packing-group-row {
     display: grid;
-    grid-template-columns: minmax(112px, 1fr) auto;
-    gap: 6px;
-    padding: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 7px;
   }
 
   .packing-group-row .check-row {
     width: 100%;
     min-width: 0;
-    gap: 6px;
+    gap: 5px;
   }
 
   .packing-group-row .item-title {
     flex: 1 1 0;
-    min-width: 0;
+    min-width: 72px;
   }
 
   .packing-group-row .group-count {
-    margin-left: auto;
+    display: none;
   }
 
   .packing-group-row .item-actions {
     justify-content: flex-end;
-    gap: 4px;
+    gap: 3px;
   }
 
   .packing-group-row .icon-btn {
-    width: 28px;
-    min-height: 28px;
-    flex-basis: 28px;
+    width: 26px;
+    min-height: 26px;
+    flex-basis: 26px;
   }
 
   .packing-group-row .collapse-action {
-    width: 24px;
-    min-height: 24px;
-    flex-basis: 24px;
+    width: 22px;
+    min-height: 22px;
+    flex-basis: 22px;
   }
 
   .input-row,
