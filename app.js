@@ -61,6 +61,7 @@ let state = {
   confirmingDeleteTemplateId: null,
   confirmingDeleteTodoId: null,
   confirmingDeletePackingItemId: null,
+  collapsedPackingItemIds: new Set(),
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -367,12 +368,42 @@ function renderEditor() {
 function renderPackingItem(template, item, depth) {
   const wrapper = document.createElement("li");
   wrapper.className = "tree-item";
+  wrapper.classList.toggle("packing-group", depth === 0);
+  wrapper.classList.toggle("packing-card", depth > 0);
   wrapper.style.setProperty("--depth", depth);
 
   const row = document.querySelector("#packingItemTemplate").content.firstElementChild.cloneNode(true);
+  row.classList.toggle("packing-group-row", depth === 0);
+  row.classList.toggle("packing-card-item", depth > 0);
   row.classList.toggle("done", item.packed);
   row.querySelector("input").checked = item.packed;
   row.querySelector(".item-title").textContent = item.title;
+
+  const childCount = countItems(item.children);
+  const packedChildCount = countPackedItems(item.children);
+  if (depth === 0) {
+    const collapseButton = document.createElement("button");
+    collapseButton.className = "icon-btn collapse-action";
+    collapseButton.type = "button";
+    collapseButton.title = state.collapsedPackingItemIds.has(item.id) ? "展开分项" : "折叠分项";
+    collapseButton.textContent = state.collapsedPackingItemIds.has(item.id) ? "▸" : "▾";
+    collapseButton.disabled = childCount === 0;
+    collapseButton.addEventListener("click", () => {
+      if (state.collapsedPackingItemIds.has(item.id)) {
+        state.collapsedPackingItemIds.delete(item.id);
+      } else {
+        state.collapsedPackingItemIds.add(item.id);
+      }
+      render();
+    });
+    row.querySelector(".item-actions").prepend(collapseButton);
+
+    const meta = document.createElement("span");
+    meta.className = "group-count";
+    meta.textContent = childCount > 0 ? `${packedChildCount}/${childCount} 分项` : "无分项";
+    row.querySelector(".check-row").append(meta);
+  }
+
   row.querySelector("input").addEventListener("change", async (event) => {
     updateItemById(template.items, item.id, (entry) => {
       entry.packed = event.target.checked;
@@ -412,9 +443,9 @@ function renderPackingItem(template, item, depth) {
   if (state.addingChildForItemId === item.id) {
     wrapper.append(renderChildInput(template, item, depth + 1));
   }
-  if (item.children.length > 0) {
+  if (item.children.length > 0 && !(depth === 0 && state.collapsedPackingItemIds.has(item.id))) {
     const children = document.createElement("ul");
-    children.className = "packing-children";
+    children.className = depth === 0 ? "packing-children child-card-grid" : "packing-children";
     item.children.forEach((child) => {
       children.append(renderPackingItem(template, child, depth + 1));
     });
