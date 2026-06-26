@@ -1,0 +1,15 @@
+{
+  "name": "todoapp-dev",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dev-only tooling (tests). The production app loads libraries via CDN and needs no build.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "lz-string": "^1.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
