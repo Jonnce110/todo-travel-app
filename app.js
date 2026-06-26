@@ -72,6 +72,9 @@ let state = {
   confirmingDeletePackingItemId: null,
   collapsedPackingItemIds: new Set(),
   draggingPackingItemId: null,
+  pendingShare: null,
+  pendingShareAutoSave: false,
+  shareError: false,
 };
 
 const authPanel = document.querySelector("#authPanel");
@@ -101,6 +104,31 @@ const packingItemInput = document.querySelector("#packingItemInput");
 const packingItems = document.querySelector("#packingItems");
 const packingEmpty = document.querySelector("#packingEmpty");
 const packingCounter = document.querySelector("#packingCounter");
+
+const modalOverlay = document.querySelector("#modalOverlay");
+const modalBody = document.querySelector("#modalBody");
+const modalClose = document.querySelector("#modalClose");
+let onModalClose = null;
+
+function openModal(buildBody, handleClose) {
+  modalBody.innerHTML = "";
+  buildBody(modalBody);
+  onModalClose = handleClose || null;
+  modalOverlay.hidden = false;
+}
+
+function closeModal() {
+  modalOverlay.hidden = true;
+  modalBody.innerHTML = "";
+  const callback = onModalClose;
+  onModalClose = null;
+  if (callback) callback();
+}
+
+modalClose.addEventListener("click", closeModal);
+modalOverlay.addEventListener("click", (event) => {
+  if (event.target === modalOverlay) closeModal();
+});
 
 function setStatus(message) {
   saveStatus.textContent = message;
@@ -139,16 +167,36 @@ async function init() {
     updateAuthUi();
     if (session) {
       await loadCloudData();
+      if (state.pendingShare && state.pendingShareAutoSave) {
+        const snapshot = state.pendingShare;
+        state.pendingShare = null;
+        state.pendingShareAutoSave = false;
+        await saveSharedList(snapshot);
+        clearShareParam();
+      }
     } else {
       loadGuestData();
     }
   });
+
+  const shareParam = getShareParam();
+  if (shareParam) {
+    const snapshot = ShareCodec.decodeSharedList(shareParam);
+    if (snapshot) state.pendingShare = snapshot;
+    else state.shareError = true;
+  }
 
   if (state.session) {
     setActiveView("todo");
     await loadCloudData();
   } else {
     loadGuestData();
+  }
+
+  if (state.pendingShare) {
+    openImportModal(state.pendingShare);
+  } else if (state.shareError) {
+    openShareErrorModal();
   }
 }
 
@@ -355,7 +403,15 @@ function renderTemplates() {
       render();
     });
 
-    menu.append(renameButton, copyButton, deleteButton);
+    const shareButton = document.createElement("button");
+    shareButton.type = "button";
+    shareButton.textContent = "分享";
+    shareButton.addEventListener("click", () => {
+      state.openTemplateMenuId = null;
+      render();
+      shareTemplate(template);
+    });
+    menu.append(renameButton, copyButton, shareButton, deleteButton);
     if (state.renamingTemplateId === template.id) {
       menu.append(createInlineEditForm(template.name, async (value) => {
         state.renamingTemplateId = null;
@@ -780,6 +836,214 @@ async function deleteTodo(id) {
   state.todos = state.todos.filter((todo) => todo.id !== id);
   render();
   setStatus("已云端同步");
+}
+
+const SHARE_LINK_WARN_LENGTH = 8000;
+
+function buildShareLink(template) {
+  const payload = ShareCodec.encodeSharedList({
+    name: template.name,
+    category: template.category,
+    notes: template.notes,
+    priority: template.priority,
+    items: template.items,
+  });
+  return `${location.origin}${location.pathname}?s=${payload}`;
+}
+
+async function shareTemplate(template) {
+  const link = buildShareLink(template);
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(link);
+    copied = true;
+  } catch (err) {
+    copied = false;
+  }
+  openShareResultModal(link, copied);
+}
+
+function openShareResultModal(link, copied) {
+  openModal((body) => {
+    const title = document.createElement("h3");
+    title.textContent = "分享链接已生成";
+    body.append(title);
+
+    const note = document.createElement("p");
+    note.className = "modal-note";
+    note.textContent = copied
+      ? "链接已复制到剪贴板，直接粘贴给朋友即可。"
+      : "请手动复制下面的链接发给朋友。";
+    body.append(note);
+
+    const input = document.createElement("input");
+    input.className = "share-link-input";
+    input.type = "text";
+    input.readOnly = true;
+    input.value = link;
+    input.addEventListener("focus", () => input.select());
+    body.append(input);
+
+    if (link.length > SHARE_LINK_WARN_LENGTH) {
+      const warn = document.createElement("p");
+      warn.className = "modal-note error";
+      warn.textContent = "清单较大，链接很长，部分聊天软件可能会截断，建议精简后再分享。";
+      body.append(warn);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "primary-btn";
+    copyBtn.type = "button";
+    copyBtn.textContent = "复制链接";
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(link);
+        copyBtn.textContent = "已复制";
+      } catch (err) {
+        input.focus();
+        input.select();
+        copyBtn.textContent = "请手动复制";
+      }
+    });
+
+    const doneBtn = document.createElement("button");
+    doneBtn.className = "secondary-btn";
+    doneBtn.type = "button";
+    doneBtn.textContent = "完成";
+    doneBtn.addEventListener("click", closeModal);
+
+    actions.append(copyBtn, doneBtn);
+    body.append(actions);
+  });
+}
+
+function getShareParam() {
+  return new URLSearchParams(location.search).get("s");
+}
+
+function clearShareParam() {
+  const url = new URL(location.href);
+  url.searchParams.delete("s");
+  history.replaceState(null, "", url.pathname + url.search + url.hash);
+}
+
+function renderSharePreviewTree(items) {
+  const ul = document.createElement("ul");
+  ul.className = "share-preview-tree";
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = item.title;
+    const hasChildren = item.children && item.children.length > 0;
+    if (hasChildren) label.className = "share-preview-group";
+    li.append(label);
+    if (hasChildren) li.append(renderSharePreviewTree(item.children));
+    ul.append(li);
+  });
+  return ul;
+}
+
+function openImportModal(snapshot) {
+  // Pass clearShareParam as the close handler so dismissing via the × or the
+  // backdrop also strips ?s= from the URL (a manual reload then won't re-prompt).
+  // pendingShare stays in memory, so the login-and-save path is unaffected.
+  openModal((body) => {
+    const title = document.createElement("h3");
+    title.textContent = "有人给你分享了一份清单";
+    body.append(title);
+
+    const meta = document.createElement("p");
+    meta.className = "modal-note";
+    meta.textContent = `「${snapshot.name}」· 共 ${countItems(snapshot.items)} 件`;
+    body.append(meta);
+
+    body.append(renderSharePreviewTree(snapshot.items));
+
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "primary-btn";
+    saveBtn.type = "button";
+    saveBtn.textContent = state.session ? "保存到我的清单" : "登录并保存";
+    saveBtn.addEventListener("click", async () => {
+      if (state.session) {
+        closeModal();
+        state.pendingShare = null;
+        await saveSharedList(snapshot);
+        clearShareParam();
+      } else {
+        state.pendingShareAutoSave = true;
+        closeModal();
+        setAuthMessage("登录后会自动把这份分享清单保存到你的账号。");
+        emailInput.focus();
+      }
+    });
+
+    const dismissBtn = document.createElement("button");
+    dismissBtn.className = "secondary-btn";
+    dismissBtn.type = "button";
+    dismissBtn.textContent = "暂不保存";
+    dismissBtn.addEventListener("click", () => {
+      state.pendingShare = null;
+      state.pendingShareAutoSave = false;
+      closeModal();
+      clearShareParam();
+    });
+
+    actions.append(saveBtn, dismissBtn);
+    body.append(actions);
+  }, clearShareParam);
+}
+
+function openShareErrorModal() {
+  openModal(
+    (body) => {
+      const title = document.createElement("h3");
+      title.textContent = "链接无效";
+      body.append(title);
+      const note = document.createElement("p");
+      note.className = "modal-note error";
+      note.textContent = "这个分享链接已损坏或格式不对，无法打开。";
+      body.append(note);
+      const actions = document.createElement("div");
+      actions.className = "modal-actions";
+      const okBtn = document.createElement("button");
+      okBtn.className = "primary-btn";
+      okBtn.type = "button";
+      okBtn.textContent = "知道了";
+      okBtn.addEventListener("click", closeModal);
+      actions.append(okBtn);
+      body.append(actions);
+    },
+    clearShareParam
+  );
+}
+
+async function saveSharedList(snapshot) {
+  if (!state.session) return;
+  setStatus("正在保存...");
+  const { data, error } = await supabaseClient
+    .from("packing_lists")
+    .insert({
+      user_id: state.session.user.id,
+      name: snapshot.name || "未命名清单",
+      category: snapshot.category || "",
+      notes: snapshot.notes || "",
+      priority: snapshot.priority || "标准",
+      items: cloneItems(snapshot.items),
+    })
+    .select()
+    .single();
+  if (error) return showCloudError(error);
+  state.templates.unshift({ ...data, items: normalizeItems(data.items) });
+  state.activeTemplateId = data.id;
+  setActiveView("packing");
+  render();
+  setStatus("已从分享保存");
 }
 
 async function createTemplate(source) {

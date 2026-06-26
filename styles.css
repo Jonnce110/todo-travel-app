@@ -1070,3 +1070,84 @@ select:focus {
     width: fit-content;
   }
 }
+
+/* ===== Share modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal-overlay[hidden] {
+  display: none;
+}
+.modal-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: min(480px, 100%);
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #64748b;
+}
+.modal-body h3 {
+  margin: 0 0 12px;
+}
+.modal-note {
+  color: #64748b;
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+.modal-note.error {
+  color: #dc2626;
+}
+.share-link-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  margin: 12px 0;
+  word-break: break-all;
+}
+.share-preview-tree,
+.share-preview-tree ul {
+  list-style: none;
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.share-preview-tree {
+  margin: 12px 0;
+  padding-left: 0;
+}
+.share-preview-tree li {
+  padding: 3px 0;
+  color: #334155;
+}
+.share-preview-group {
+  font-weight: 600;
+  color: #0f172a;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
