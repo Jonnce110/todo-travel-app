@@ -144,7 +144,7 @@ function getActiveTemplate() {
 }
 
 function setActiveView(view) {
-  if (!state.session && view !== "packing") return;
+  if (!state.session) return;
 
   viewTabs.forEach((tab) => {
     const active = tab.dataset.viewTab === view;
@@ -166,6 +166,7 @@ async function init() {
     state.session = session;
     updateAuthUi();
     if (session) {
+      setActiveView("todo");
       await loadCloudData();
       if (state.pendingShare && state.pendingShareAutoSave) {
         const snapshot = state.pendingShare;
@@ -175,7 +176,7 @@ async function init() {
         clearShareParam();
       }
     } else {
-      loadGuestData();
+      loadSignedOutData();
     }
   });
 
@@ -190,7 +191,7 @@ async function init() {
     setActiveView("todo");
     await loadCloudData();
   } else {
-    loadGuestData();
+    loadSignedOutData();
   }
 
   if (state.pendingShare) {
@@ -203,38 +204,42 @@ async function init() {
 function updateAuthUi() {
   const signedIn = Boolean(state.session);
   authPanel.hidden = signedIn;
+  viewTabsNav.hidden = !signedIn;
+  workspace.hidden = !signedIn;
   workspace.classList.toggle("locked", false);
-  workspace.classList.toggle("readonly", !signedIn);
-  viewTabsNav.classList.toggle("single-tab", !signedIn);
+  workspace.classList.toggle("readonly", false);
+  viewTabsNav.classList.toggle("single-tab", false);
   signOutBtn.hidden = !signedIn;
   newListBtn.hidden = !signedIn;
   packingItemForm.hidden = !signedIn;
   viewTabs.forEach((tab) => {
-    tab.hidden = !signedIn && tab.dataset.viewTab !== "packing";
+    tab.hidden = !signedIn;
   });
   if (signedIn) {
     setStatus(`已登录：${state.session.user.email}`);
     setAuthMessage("");
   } else {
-    setStatus("访客预览：基础GO");
+    setStatus("请先登录");
   }
 }
 
-function loadGuestData() {
+function loadSignedOutData() {
   state.todos = [];
-  state.templates = defaultTemplates.map((template, index) => ({
-    ...template,
-    id: `guest-template-${index}`,
-    items: cloneItems(template.items),
-  }));
-  state.activeTemplateId = state.templates[0]?.id || null;
+  state.templates = [];
+  state.activeTemplateId = null;
   state.openTemplateMenuId = null;
   state.addingChildForItemId = null;
+  state.editingTodoId = null;
   state.editingPackingItemId = null;
   state.renamingTemplateId = null;
   state.confirmingDeleteTemplateId = null;
+  state.confirmingDeleteTodoId = null;
   state.confirmingDeletePackingItemId = null;
-  setActiveView("packing");
+  state.collapsedPackingItemIds = new Set();
+  state.draggingPackingItemId = null;
+  viewPanels.forEach((panel) => {
+    panel.hidden = true;
+  });
   render();
 }
 

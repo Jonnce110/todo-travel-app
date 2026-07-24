@@ -948,6 +948,11 @@ select:focus {
     scroll-snap-align: start;
   }
 
+  .template-card.menu-open {
+    z-index: 5;
+    border-radius: 8px;
+  }
+
   .template-card.active {
     box-shadow: 0 6px 16px rgba(28, 112, 102, 0.13);
   }
@@ -983,15 +988,23 @@ select:focus {
     font-size: 1rem;
   }
 
+  .template-card.menu-open .template-tab {
+    border-radius: 8px 0 0 0;
+  }
+
+  .template-card.menu-open .template-menu-button {
+    border-radius: 0 8px 0 0;
+  }
+
   .template-menu {
-    position: absolute;
-    z-index: 4;
-    top: calc(100% + 6px);
-    right: 0;
-    width: min(190px, calc(100vw - 32px));
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: var(--shadow-soft);
+    position: static;
+    width: auto;
+    border-top: 1px solid var(--line);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0 0 8px 8px;
+    box-shadow: none;
     background: #fff;
   }
 
