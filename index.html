@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260724-mobile-menu-sheet" />
+    <link rel="stylesheet" href="./styles.css?v=20260727-bucket-list-mvp" />
   </head>
   <body>
     <div class="app-shell">
@@ -39,6 +39,9 @@
         </button>
         <button class="view-tab" type="button" data-view-tab="packing" aria-controls="packingPanel" aria-selected="false">
           出行清单
+        </button>
+        <button class="view-tab" type="button" data-view-tab="bucket" aria-controls="bucketPanel" aria-selected="false">
+          人生清单
         </button>
       </nav>
 
@@ -98,6 +101,30 @@
             </div>
           </div>
         </section>
+
+        <section class="panel bucket-panel" id="bucketPanel" data-view-panel="bucket" aria-labelledby="bucketTitle" hidden>
+          <div class="section-header">
+            <div>
+              <h2 id="bucketTitle">人生清单</h2>
+              <p>先把想做的事放进来，以后慢慢实现。</p>
+            </div>
+            <span class="counter" id="bucketCounter">0 项</span>
+          </div>
+
+          <form class="input-row" id="bucketForm">
+            <input
+              id="bucketInput"
+              type="text"
+              autocomplete="off"
+              placeholder="新增人生清单"
+              aria-label="新增人生清单"
+            />
+            <button class="primary-btn" type="submit">添加</button>
+          </form>
+
+          <ul class="item-list bucket-list" id="bucketList" aria-label="人生清单列表"></ul>
+          <p class="empty-state" id="bucketEmpty">还没有人生清单，先写下一件想实现的事吧。</p>
+        </section>
       </main>
     </div>
 
@@ -135,9 +162,20 @@
       </li>
     </template>
 
+    <template id="bucketItemTemplate">
+      <li class="list-item bucket-item">
+        <span class="bucket-marker" aria-hidden="true"></span>
+        <span class="item-title"></span>
+        <div class="item-actions">
+          <button class="icon-btn edit-action" type="button" title="编辑">✎</button>
+          <button class="icon-btn delete-action" type="button" title="删除">×</button>
+        </div>
+      </li>
+    </template>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-    <script src="./share.js?v=20260724-mobile-menu-sheet"></script>
-    <script src="./app.js?v=20260724-mobile-menu-sheet"></script>
+    <script src="./share.js?v=20260727-bucket-list-mvp"></script>
+    <script src="./app.js?v=20260727-bucket-list-mvp"></script>
   </body>
 </html>

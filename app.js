@@ -61,14 +61,17 @@ let state = {
   session: null,
   todos: [],
   templates: [],
+  bucketItems: [],
   activeTemplateId: null,
   openTemplateMenuId: null,
   addingChildForItemId: null,
   editingTodoId: null,
+  editingBucketItemId: null,
   editingPackingItemId: null,
   renamingTemplateId: null,
   confirmingDeleteTemplateId: null,
   confirmingDeleteTodoId: null,
+  confirmingDeleteBucketItemId: null,
   confirmingDeletePackingItemId: null,
   collapsedPackingItemIds: new Set(),
   draggingPackingItemId: null,
@@ -104,6 +107,12 @@ const packingItemInput = document.querySelector("#packingItemInput");
 const packingItems = document.querySelector("#packingItems");
 const packingEmpty = document.querySelector("#packingEmpty");
 const packingCounter = document.querySelector("#packingCounter");
+
+const bucketForm = document.querySelector("#bucketForm");
+const bucketInput = document.querySelector("#bucketInput");
+const bucketList = document.querySelector("#bucketList");
+const bucketEmpty = document.querySelector("#bucketEmpty");
+const bucketCounter = document.querySelector("#bucketCounter");
 
 const modalOverlay = document.querySelector("#modalOverlay");
 const modalBody = document.querySelector("#modalBody");
@@ -226,14 +235,17 @@ function updateAuthUi() {
 function loadSignedOutData() {
   state.todos = [];
   state.templates = [];
+  state.bucketItems = [];
   state.activeTemplateId = null;
   state.openTemplateMenuId = null;
   state.addingChildForItemId = null;
   state.editingTodoId = null;
+  state.editingBucketItemId = null;
   state.editingPackingItemId = null;
   state.renamingTemplateId = null;
   state.confirmingDeleteTemplateId = null;
   state.confirmingDeleteTodoId = null;
+  state.confirmingDeleteBucketItemId = null;
   state.confirmingDeletePackingItemId = null;
   state.collapsedPackingItemIds = new Set();
   state.draggingPackingItemId = null;
@@ -246,21 +258,26 @@ function loadSignedOutData() {
 async function loadCloudData() {
   setStatus("正在同步...");
 
-  const [{ data: todos, error: todosError }, { data: templates, error: templatesError }] =
+  const [
+    { data: todos, error: todosError },
+    { data: templates, error: templatesError },
+    { data: bucketItems, error: bucketItemsError },
+  ] =
     await Promise.all([
       supabaseClient.from("todos").select("*").order("created_at", { ascending: false }),
       supabaseClient.from("packing_lists").select("*").order("created_at", { ascending: false }),
+      supabaseClient.from("bucket_items").select("*").order("created_at", { ascending: false }),
     ]);
 
-  if (todosError || templatesError) {
-    const message = todosError?.message || templatesError?.message || "同步失败";
+  if (todosError || templatesError || bucketItemsError) {
+    const message = todosError?.message || templatesError?.message || bucketItemsError?.message || "同步失败";
     setStatus("同步失败");
     setAuthMessage(`Supabase 同步失败：${message}。请确认已经运行 supabase-schema.sql。`, true);
     render();
     return;
   }
 
-  if (todos.length === 0 && templates.length === 0) {
+  if (todos.length === 0 && templates.length === 0 && bucketItems.length === 0) {
     await seedDefaultData();
     return loadCloudData();
   }
@@ -270,6 +287,7 @@ async function loadCloudData() {
     ...template,
     items: normalizeItems(template.items),
   }));
+  state.bucketItems = bucketItems;
   state.activeTemplateId = state.activeTemplateId || state.templates[0]?.id || null;
   render();
   setStatus("已云端同步");
@@ -296,6 +314,7 @@ function render() {
   renderTodos();
   renderTemplates();
   renderEditor();
+  renderBucketItems();
 }
 
 function renderTodos() {
@@ -341,6 +360,45 @@ function renderTodos() {
   const activeCount = state.todos.filter((todo) => !todo.done).length;
   todoCounter.textContent = `${activeCount}/${state.todos.length} 项`;
   todoEmpty.classList.toggle("visible", state.todos.length === 0);
+}
+
+function renderBucketItems() {
+  bucketList.innerHTML = "";
+  state.bucketItems.forEach((item) => {
+    const node = document.querySelector("#bucketItemTemplate").content.firstElementChild.cloneNode(true);
+    const titleSlot = node.querySelector(".item-title");
+    if (state.editingBucketItemId === item.id) {
+      titleSlot.replaceChildren(createInlineEditForm(item.title, async (value) => {
+        state.editingBucketItemId = null;
+        await updateBucketItem(item.id, { title: value });
+      }, () => {
+        state.editingBucketItemId = null;
+        render();
+      }));
+    } else {
+      titleSlot.textContent = item.title;
+    }
+    node.querySelector(".edit-action").addEventListener("click", () => {
+      state.editingBucketItemId = item.id;
+      render();
+    });
+    node.querySelector(".delete-action").addEventListener("click", () => {
+      state.confirmingDeleteBucketItemId = item.id;
+      render();
+    });
+    if (state.confirmingDeleteBucketItemId === item.id) {
+      node.append(createDeleteConfirmRow(async () => {
+        state.confirmingDeleteBucketItemId = null;
+        await deleteBucketItem(item.id);
+      }, () => {
+        state.confirmingDeleteBucketItemId = null;
+        render();
+      }));
+    }
+    bucketList.append(node);
+  });
+  bucketCounter.textContent = `${state.bucketItems.length} 项`;
+  bucketEmpty.classList.toggle("visible", state.bucketItems.length === 0);
 }
 
 function renderTemplates() {
@@ -843,6 +901,42 @@ async function deleteTodo(id) {
   setStatus("已云端同步");
 }
 
+async function addBucketItem(title) {
+  setStatus("正在保存...");
+  const { data, error } = await supabaseClient
+    .from("bucket_items")
+    .insert({ title, user_id: state.session.user.id })
+    .select()
+    .single();
+  if (error) return showCloudError(error);
+  state.bucketItems.unshift(data);
+  render();
+  setStatus("已云端同步");
+}
+
+async function updateBucketItem(id, patch) {
+  setStatus("正在保存...");
+  const { data, error } = await supabaseClient
+    .from("bucket_items")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) return showCloudError(error);
+  state.bucketItems = state.bucketItems.map((item) => (item.id === id ? data : item));
+  render();
+  setStatus("已云端同步");
+}
+
+async function deleteBucketItem(id) {
+  setStatus("正在删除...");
+  const { error } = await supabaseClient.from("bucket_items").delete().eq("id", id);
+  if (error) return showCloudError(error);
+  state.bucketItems = state.bucketItems.filter((item) => item.id !== id);
+  render();
+  setStatus("已云端同步");
+}
+
 const SHARE_LINK_WARN_LENGTH = 8000;
 
 function buildShareLink(template) {
@@ -1195,6 +1289,14 @@ todoForm.addEventListener("submit", async (event) => {
   if (!title || !state.session) return;
   todoInput.value = "";
   await addTodo(title);
+});
+
+bucketForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const title = bucketInput.value.trim();
+  if (!title || !state.session) return;
+  bucketInput.value = "";
+  await addBucketItem(title);
 });
 
 newListBtn.addEventListener("click", () => {
