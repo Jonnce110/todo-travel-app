@@ -239,7 +239,62 @@ h3 {
 }
 
 .bucket-form {
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, 190px) minmax(170px, 210px) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto;
+}
+
+.bucket-form[hidden],
+.bucket-add-button[hidden] {
+  display: none;
+}
+
+.bucket-add-button {
+  min-height: 42px;
+}
+
+.bucket-save-add {
+  background: var(--soft-green);
+  color: var(--brand-dark);
+}
+
+.category-combobox {
+  position: relative;
+  min-width: 0;
+}
+
+.category-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 5px;
+  box-shadow: var(--shadow);
+}
+
+.category-suggestions[hidden] {
+  display: none;
+}
+
+.category-suggestions button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0 10px;
+  text-align: left;
+}
+
+.category-suggestions button:hover,
+.category-suggestions button:focus {
+  background: var(--soft-green);
+  outline: none;
 }
 
 input,
@@ -671,7 +726,7 @@ select:focus {
 
 .bucket-edit-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, 190px) minmax(160px, 210px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -1014,18 +1069,24 @@ select:focus {
   }
 
   .bucket-form {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
-  .bucket-form > * {
+  .bucket-form > input,
+  .bucket-form > .category-combobox {
     grid-column: 1 / -1;
+  }
+
+  .bucket-form .bucket-save-add {
+    grid-column: 2;
   }
 
   .bucket-edit-form {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .bucket-edit-form input {
+  .bucket-edit-form > input,
+  .bucket-edit-form > .category-combobox {
     grid-column: 1 / -1;
   }
 

@@ -110,11 +110,13 @@ const packingEmpty = document.querySelector("#packingEmpty");
 const packingCounter = document.querySelector("#packingCounter");
 
 const bucketForm = document.querySelector("#bucketForm");
+const bucketAddBtn = document.querySelector("#bucketAddBtn");
+const bucketCancelAddBtn = document.querySelector("#bucketCancelAddBtn");
 const bucketInput = document.querySelector("#bucketInput");
 const bucketCategoryInput = document.querySelector("#bucketCategoryInput");
+const bucketCategorySuggestions = document.querySelector("#bucketCategorySuggestions");
 const bucketTargetDateInput = document.querySelector("#bucketTargetDateInput");
 const bucketCategoryTabs = document.querySelector("#bucketCategoryTabs");
-const bucketCategoryOptions = document.querySelector("#bucketCategoryOptions");
 const bucketList = document.querySelector("#bucketList");
 const bucketEmpty = document.querySelector("#bucketEmpty");
 const bucketCounter = document.querySelector("#bucketCounter");
@@ -255,6 +257,7 @@ function loadSignedOutData() {
   state.confirmingDeletePackingItemId = null;
   state.collapsedPackingItemIds = new Set();
   state.draggingPackingItemId = null;
+  setBucketFormExpanded(false);
   viewPanels.forEach((panel) => {
     panel.hidden = true;
   });
@@ -374,7 +377,6 @@ function renderBucketItems() {
     state.activeBucketCategory = null;
   }
   renderBucketCategoryTabs(categories);
-  renderBucketCategoryOptions(categories);
 
   const visibleItems = state.activeBucketCategory
     ? state.bucketItems.filter((item) => normalizeBucketCategory(item.category) === state.activeBucketCategory)
@@ -457,6 +459,19 @@ function renderBucketItems() {
   bucketEmpty.classList.toggle("visible", visibleItems.length === 0);
 }
 
+function setBucketFormExpanded(expanded) {
+  bucketForm.hidden = !expanded;
+  bucketAddBtn.hidden = expanded;
+  bucketAddBtn.setAttribute("aria-expanded", String(expanded));
+  if (expanded) {
+    requestAnimationFrame(() => bucketInput.focus());
+  } else {
+    bucketInput.value = "";
+    bucketCategoryInput.value = "";
+    bucketTargetDateInput.value = "";
+  }
+}
+
 function normalizeBucketCategory(value) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -492,14 +507,6 @@ function renderBucketCategoryTabs(categories) {
   });
 }
 
-function renderBucketCategoryOptions(categories) {
-  bucketCategoryOptions.replaceChildren(...categories.map((category) => {
-    const option = document.createElement("option");
-    option.value = category;
-    return option;
-  }));
-}
-
 function getBucketCategoryColor(category) {
   if (!category) return "#9aa59f";
   const colors = ["#c8673e", "#1c7066", "#5577b8", "#9a5db0", "#d0952e", "#3f8c63", "#c45d7c", "#64748b"];
@@ -529,9 +536,19 @@ function createBucketEditForm(item, onSave) {
   categoryInput.type = "text";
   categoryInput.autocomplete = "off";
   categoryInput.value = normalizeBucketCategory(item.category);
-  categoryInput.setAttribute("list", "bucketCategoryOptions");
   categoryInput.setAttribute("placeholder", "分类（可选）");
   categoryInput.setAttribute("aria-label", "修改愿望分类（可选）");
+  categoryInput.setAttribute("aria-autocomplete", "list");
+  categoryInput.setAttribute("aria-expanded", "false");
+
+  const categoryField = document.createElement("div");
+  categoryField.className = "category-combobox";
+  const categorySuggestions = document.createElement("div");
+  categorySuggestions.className = "category-suggestions";
+  categorySuggestions.role = "listbox";
+  categorySuggestions.hidden = true;
+  categoryField.append(categoryInput, categorySuggestions);
+  setupCategoryCombobox(categoryInput, categorySuggestions);
 
   const dateInput = document.createElement("input");
   dateInput.type = "date";
@@ -545,12 +562,52 @@ function createBucketEditForm(item, onSave) {
     await onSave(title, normalizeBucketCategory(categoryInput.value), dateInput.value);
   });
 
-  form.append(titleInput, categoryInput, dateInput);
+  form.append(titleInput, categoryField, dateInput);
   requestAnimationFrame(() => {
     titleInput.focus();
     titleInput.select();
   });
   return form;
+}
+
+function setupCategoryCombobox(input, suggestions) {
+  function showSuggestions(filter = "") {
+    const normalizedFilter = normalizeBucketCategory(filter).toLocaleLowerCase("zh-CN");
+    const categories = getBucketCategories().filter((category) => (
+      !normalizedFilter || category.toLocaleLowerCase("zh-CN").includes(normalizedFilter)
+    ));
+    suggestions.replaceChildren(...categories.map((category) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.role = "option";
+      option.textContent = category;
+      option.addEventListener("click", () => {
+        input.value = category;
+        suggestions.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+        input.focus();
+      });
+      return option;
+    }));
+    suggestions.hidden = categories.length === 0;
+    input.setAttribute("aria-expanded", String(categories.length > 0));
+  }
+
+  input.addEventListener("focus", () => showSuggestions());
+  input.addEventListener("click", () => showSuggestions());
+  input.addEventListener("input", () => showSuggestions(input.value));
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      suggestions.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    }
+  });
+  input.addEventListener("blur", () => {
+    window.setTimeout(() => {
+      suggestions.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    }, 120);
+  });
 }
 
 function renderTemplates() {
@@ -1065,10 +1122,14 @@ async function addBucketItem(title, category, targetDate) {
     })
     .select()
     .single();
-  if (error) return showCloudError(error);
+  if (error) {
+    showCloudError(error);
+    return false;
+  }
   state.bucketItems.unshift(data);
   render();
   setStatus("已云端同步");
+  return true;
 }
 
 async function updateBucketItem(id, patch) {
@@ -1454,11 +1515,13 @@ bucketForm.addEventListener("submit", async (event) => {
   if (!title || !state.session) return;
   const category = normalizeBucketCategory(bucketCategoryInput.value);
   const targetDate = bucketTargetDateInput.value;
-  bucketInput.value = "";
-  bucketCategoryInput.value = "";
-  bucketTargetDateInput.value = "";
-  await addBucketItem(title, category, targetDate);
+  const saved = await addBucketItem(title, category, targetDate);
+  if (saved) setBucketFormExpanded(false);
 });
+
+bucketAddBtn.addEventListener("click", () => setBucketFormExpanded(true));
+bucketCancelAddBtn.addEventListener("click", () => setBucketFormExpanded(false));
+setupCategoryCombobox(bucketCategoryInput, bucketCategorySuggestions);
 
 newListBtn.addEventListener("click", () => {
   if (state.session) createTemplate();

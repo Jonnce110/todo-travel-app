@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260730-bucket-categories" />
+    <link rel="stylesheet" href="./styles.css?v=20260730-category-combobox" />
   </head>
   <body>
     <div class="app-shell">
@@ -113,7 +113,9 @@
 
           <nav class="bucket-category-tabs" id="bucketCategoryTabs" aria-label="愿望分类"></nav>
 
-          <form class="input-row bucket-form" id="bucketForm">
+          <button class="primary-btn bucket-add-button" id="bucketAddBtn" type="button" aria-controls="bucketForm" aria-expanded="false">添加愿望</button>
+
+          <form class="input-row bucket-form" id="bucketForm" hidden>
             <input
               id="bucketInput"
               type="text"
@@ -121,23 +123,27 @@
               placeholder="新增人生清单"
               aria-label="新增人生清单"
             />
-            <input
-              id="bucketCategoryInput"
-              type="text"
-              list="bucketCategoryOptions"
-              autocomplete="off"
-              placeholder="分类（可选）"
-              aria-label="愿望分类（可选）"
-            />
+            <div class="category-combobox">
+              <input
+                id="bucketCategoryInput"
+                type="text"
+                autocomplete="off"
+                placeholder="分类（可选）"
+                aria-label="愿望分类（可选）"
+                aria-autocomplete="list"
+                aria-expanded="false"
+              />
+              <div class="category-suggestions" id="bucketCategorySuggestions" role="listbox" hidden></div>
+            </div>
             <input
               id="bucketTargetDateInput"
               type="date"
               aria-label="目标日期（可选）"
               title="目标日期（可选）"
             />
-            <button class="primary-btn" type="submit">添加</button>
+            <button class="icon-btn bucket-save-add" type="submit" title="添加" aria-label="添加">✓</button>
+            <button class="icon-btn" id="bucketCancelAddBtn" type="button" title="取消" aria-label="取消">×</button>
           </form>
-          <datalist id="bucketCategoryOptions"></datalist>
 
           <ul class="item-list bucket-list" id="bucketList" aria-label="人生清单列表"></ul>
           <p class="empty-state" id="bucketEmpty">还没有人生清单，先写下一件想实现的事吧。</p>
@@ -199,6 +205,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="./share.js?v=20260727-bucket-list-mvp"></script>
-    <script src="./app.js?v=20260730-bucket-categories"></script>
+    <script src="./app.js?v=20260730-category-combobox"></script>
   </body>
 </html>
