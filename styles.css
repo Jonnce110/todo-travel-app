@@ -1247,6 +1247,10 @@ select:focus {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
+  .input-row.bucket-form {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
   .inline-edit-form,
   .inline-child-form {
     grid-template-columns: minmax(0, 1fr) auto auto;
