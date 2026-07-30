@@ -369,14 +369,26 @@ function renderBucketItems() {
     const node = document.querySelector("#bucketItemTemplate").content.firstElementChild.cloneNode(true);
     const contentSlot = node.querySelector(".bucket-content");
     const titleSlot = node.querySelector(".item-title");
+    const editButton = node.querySelector(".edit-action");
+    const deleteButton = node.querySelector(".delete-action");
     if (state.editingBucketItemId === item.id) {
-      contentSlot.replaceChildren(createBucketEditForm(item, async (title, targetDate) => {
+      const editForm = createBucketEditForm(item, async (title, targetDate) => {
         state.editingBucketItemId = null;
         await updateBucketItem(item.id, { title, target_date: targetDate || null });
-      }, () => {
+      });
+      contentSlot.replaceChildren(editForm);
+
+      editButton.textContent = "✓";
+      editButton.title = "保存";
+      editButton.setAttribute("aria-label", "保存");
+      editButton.addEventListener("click", () => editForm.requestSubmit());
+
+      deleteButton.title = "取消";
+      deleteButton.setAttribute("aria-label", "取消");
+      deleteButton.addEventListener("click", () => {
         state.editingBucketItemId = null;
         render();
-      }));
+      });
     } else {
       titleSlot.textContent = item.title;
       const targetDate = node.querySelector(".bucket-target-date");
@@ -385,15 +397,16 @@ function renderBucketItems() {
         targetDate.textContent = `目标 ${formatTargetDate(item.target_date)}`;
         targetDate.hidden = false;
       }
+      editButton.addEventListener("click", () => {
+        state.editingBucketItemId = item.id;
+        state.confirmingDeleteBucketItemId = null;
+        render();
+      });
+      deleteButton.addEventListener("click", () => {
+        state.confirmingDeleteBucketItemId = item.id;
+        render();
+      });
     }
-    node.querySelector(".edit-action").addEventListener("click", () => {
-      state.editingBucketItemId = item.id;
-      render();
-    });
-    node.querySelector(".delete-action").addEventListener("click", () => {
-      state.confirmingDeleteBucketItemId = item.id;
-      render();
-    });
     if (state.confirmingDeleteBucketItemId === item.id) {
       node.append(createDeleteConfirmRow(async () => {
         state.confirmingDeleteBucketItemId = null;
@@ -415,7 +428,7 @@ function formatTargetDate(value) {
   return `${year}年${month}月${day}日`;
 }
 
-function createBucketEditForm(item, onSave, onCancel) {
+function createBucketEditForm(item, onSave) {
   const form = document.createElement("form");
   form.className = "bucket-edit-form";
   form.addEventListener("click", (event) => event.stopPropagation());
@@ -431,18 +444,6 @@ function createBucketEditForm(item, onSave, onCancel) {
   dateInput.value = item.target_date || "";
   dateInput.setAttribute("aria-label", "修改目标日期（可选）");
 
-  const saveButton = document.createElement("button");
-  saveButton.className = "secondary-btn";
-  saveButton.type = "submit";
-  saveButton.textContent = "保存";
-
-  const cancelButton = document.createElement("button");
-  cancelButton.className = "icon-btn";
-  cancelButton.type = "button";
-  cancelButton.title = "取消";
-  cancelButton.textContent = "×";
-  cancelButton.addEventListener("click", onCancel);
-
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const title = titleInput.value.trim();
@@ -450,7 +451,7 @@ function createBucketEditForm(item, onSave, onCancel) {
     await onSave(title, dateInput.value);
   });
 
-  form.append(titleInput, dateInput, saveButton, cancelButton);
+  form.append(titleInput, dateInput);
   requestAnimationFrame(() => {
     titleInput.focus();
     titleInput.select();

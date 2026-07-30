@@ -616,7 +616,7 @@ select:focus {
 
 .bucket-edit-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(160px, 210px) auto auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 210px);
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -967,7 +967,7 @@ select:focus {
   }
 
   .bucket-edit-form {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .bucket-edit-form input {
