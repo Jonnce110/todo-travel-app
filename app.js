@@ -62,6 +62,7 @@ let state = {
   todos: [],
   templates: [],
   bucketItems: [],
+  activeBucketCategory: null,
   activeTemplateId: null,
   openTemplateMenuId: null,
   addingChildForItemId: null,
@@ -110,7 +111,10 @@ const packingCounter = document.querySelector("#packingCounter");
 
 const bucketForm = document.querySelector("#bucketForm");
 const bucketInput = document.querySelector("#bucketInput");
+const bucketCategoryInput = document.querySelector("#bucketCategoryInput");
 const bucketTargetDateInput = document.querySelector("#bucketTargetDateInput");
+const bucketCategoryTabs = document.querySelector("#bucketCategoryTabs");
+const bucketCategoryOptions = document.querySelector("#bucketCategoryOptions");
 const bucketList = document.querySelector("#bucketList");
 const bucketEmpty = document.querySelector("#bucketEmpty");
 const bucketCounter = document.querySelector("#bucketCounter");
@@ -237,6 +241,7 @@ function loadSignedOutData() {
   state.todos = [];
   state.templates = [];
   state.bucketItems = [];
+  state.activeBucketCategory = null;
   state.activeTemplateId = null;
   state.openTemplateMenuId = null;
   state.addingChildForItemId = null;
@@ -364,17 +369,31 @@ function renderTodos() {
 }
 
 function renderBucketItems() {
+  const categories = getBucketCategories();
+  if (state.activeBucketCategory && !categories.includes(state.activeBucketCategory)) {
+    state.activeBucketCategory = null;
+  }
+  renderBucketCategoryTabs(categories);
+  renderBucketCategoryOptions(categories);
+
+  const visibleItems = state.activeBucketCategory
+    ? state.bucketItems.filter((item) => normalizeBucketCategory(item.category) === state.activeBucketCategory)
+    : state.bucketItems;
   bucketList.innerHTML = "";
-  state.bucketItems.forEach((item) => {
+  visibleItems.forEach((item) => {
     const node = document.querySelector("#bucketItemTemplate").content.firstElementChild.cloneNode(true);
     const contentSlot = node.querySelector(".bucket-content");
     const titleSlot = node.querySelector(".item-title");
     const editButton = node.querySelector(".edit-action");
     const deleteButton = node.querySelector(".delete-action");
     if (state.editingBucketItemId === item.id) {
-      const editForm = createBucketEditForm(item, async (title, targetDate) => {
+      const editForm = createBucketEditForm(item, async (title, category, targetDate) => {
         state.editingBucketItemId = null;
-        await updateBucketItem(item.id, { title, target_date: targetDate || null });
+        await updateBucketItem(item.id, {
+          title,
+          category: category || null,
+          target_date: targetDate || null,
+        });
       });
       contentSlot.replaceChildren(editForm);
 
@@ -391,11 +410,22 @@ function renderBucketItems() {
       });
     } else {
       titleSlot.textContent = item.title;
+      const category = normalizeBucketCategory(item.category);
+      const markerColor = getBucketCategoryColor(category);
+      node.querySelector(".bucket-marker").style.setProperty("--bucket-color", markerColor);
+      const meta = node.querySelector(".bucket-meta");
+      const categoryLabel = node.querySelector(".bucket-category-label");
+      if (category) {
+        categoryLabel.textContent = category;
+        categoryLabel.hidden = false;
+        meta.hidden = false;
+      }
       const targetDate = node.querySelector(".bucket-target-date");
       if (item.target_date) {
         targetDate.dateTime = item.target_date;
         targetDate.textContent = `目标 ${formatTargetDate(item.target_date)}`;
         targetDate.hidden = false;
+        meta.hidden = false;
       }
       editButton.addEventListener("click", () => {
         state.editingBucketItemId = item.id;
@@ -418,8 +448,64 @@ function renderBucketItems() {
     }
     bucketList.append(node);
   });
-  bucketCounter.textContent = `${state.bucketItems.length} 项`;
-  bucketEmpty.classList.toggle("visible", state.bucketItems.length === 0);
+  bucketCounter.textContent = state.activeBucketCategory
+    ? `${visibleItems.length}/${state.bucketItems.length} 项`
+    : `${state.bucketItems.length} 项`;
+  bucketEmpty.textContent = state.activeBucketCategory
+    ? `“${state.activeBucketCategory}”分类下还没有愿望。`
+    : "还没有人生清单，先写下一件想实现的事吧。";
+  bucketEmpty.classList.toggle("visible", visibleItems.length === 0);
+}
+
+function normalizeBucketCategory(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function getBucketCategories() {
+  return [...new Set(state.bucketItems.map((item) => normalizeBucketCategory(item.category)).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function renderBucketCategoryTabs(categories) {
+  bucketCategoryTabs.innerHTML = "";
+  const tabs = [{ label: "全部", category: null }, ...categories.map((category) => ({ label: category, category }))];
+  tabs.forEach(({ label, category }) => {
+    const button = document.createElement("button");
+    button.className = "bucket-category-tab";
+    button.type = "button";
+    button.classList.toggle("active", state.activeBucketCategory === category);
+    button.setAttribute("aria-pressed", String(state.activeBucketCategory === category));
+    if (category) {
+      const dot = document.createElement("span");
+      dot.className = "bucket-tab-dot";
+      dot.style.setProperty("--bucket-color", getBucketCategoryColor(category));
+      button.append(dot);
+    }
+    button.append(document.createTextNode(label));
+    button.addEventListener("click", () => {
+      state.activeBucketCategory = category;
+      state.editingBucketItemId = null;
+      state.confirmingDeleteBucketItemId = null;
+      render();
+    });
+    bucketCategoryTabs.append(button);
+  });
+}
+
+function renderBucketCategoryOptions(categories) {
+  bucketCategoryOptions.replaceChildren(...categories.map((category) => {
+    const option = document.createElement("option");
+    option.value = category;
+    return option;
+  }));
+}
+
+function getBucketCategoryColor(category) {
+  if (!category) return "#9aa59f";
+  const colors = ["#c8673e", "#1c7066", "#5577b8", "#9a5db0", "#d0952e", "#3f8c63", "#c45d7c", "#64748b"];
+  let hash = 0;
+  for (const character of category) hash = ((hash << 5) - hash + character.codePointAt(0)) | 0;
+  return colors[Math.abs(hash) % colors.length];
 }
 
 function formatTargetDate(value) {
@@ -439,6 +525,14 @@ function createBucketEditForm(item, onSave) {
   titleInput.value = item.title;
   titleInput.setAttribute("aria-label", "修改愿望");
 
+  const categoryInput = document.createElement("input");
+  categoryInput.type = "text";
+  categoryInput.autocomplete = "off";
+  categoryInput.value = normalizeBucketCategory(item.category);
+  categoryInput.setAttribute("list", "bucketCategoryOptions");
+  categoryInput.setAttribute("placeholder", "分类（可选）");
+  categoryInput.setAttribute("aria-label", "修改愿望分类（可选）");
+
   const dateInput = document.createElement("input");
   dateInput.type = "date";
   dateInput.value = item.target_date || "";
@@ -448,10 +542,10 @@ function createBucketEditForm(item, onSave) {
     event.preventDefault();
     const title = titleInput.value.trim();
     if (!title) return;
-    await onSave(title, dateInput.value);
+    await onSave(title, normalizeBucketCategory(categoryInput.value), dateInput.value);
   });
 
-  form.append(titleInput, dateInput);
+  form.append(titleInput, categoryInput, dateInput);
   requestAnimationFrame(() => {
     titleInput.focus();
     titleInput.select();
@@ -959,11 +1053,16 @@ async function deleteTodo(id) {
   setStatus("已云端同步");
 }
 
-async function addBucketItem(title, targetDate) {
+async function addBucketItem(title, category, targetDate) {
   setStatus("正在保存...");
   const { data, error } = await supabaseClient
     .from("bucket_items")
-    .insert({ title, target_date: targetDate || null, user_id: state.session.user.id })
+    .insert({
+      title,
+      category: category || null,
+      target_date: targetDate || null,
+      user_id: state.session.user.id,
+    })
     .select()
     .single();
   if (error) return showCloudError(error);
@@ -1353,10 +1452,12 @@ bucketForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = bucketInput.value.trim();
   if (!title || !state.session) return;
+  const category = normalizeBucketCategory(bucketCategoryInput.value);
   const targetDate = bucketTargetDateInput.value;
   bucketInput.value = "";
+  bucketCategoryInput.value = "";
   bucketTargetDateInput.value = "";
-  await addBucketItem(title, targetDate);
+  await addBucketItem(title, category, targetDate);
 });
 
 newListBtn.addEventListener("click", () => {

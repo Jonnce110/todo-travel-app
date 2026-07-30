@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260730-bucket-edit-actions" />
+    <link rel="stylesheet" href="./styles.css?v=20260730-bucket-categories" />
   </head>
   <body>
     <div class="app-shell">
@@ -111,6 +111,8 @@
             <span class="counter" id="bucketCounter">0 项</span>
           </div>
 
+          <nav class="bucket-category-tabs" id="bucketCategoryTabs" aria-label="愿望分类"></nav>
+
           <form class="input-row bucket-form" id="bucketForm">
             <input
               id="bucketInput"
@@ -120,6 +122,14 @@
               aria-label="新增人生清单"
             />
             <input
+              id="bucketCategoryInput"
+              type="text"
+              list="bucketCategoryOptions"
+              autocomplete="off"
+              placeholder="分类（可选）"
+              aria-label="愿望分类（可选）"
+            />
+            <input
               id="bucketTargetDateInput"
               type="date"
               aria-label="目标日期（可选）"
@@ -127,6 +137,7 @@
             />
             <button class="primary-btn" type="submit">添加</button>
           </form>
+          <datalist id="bucketCategoryOptions"></datalist>
 
           <ul class="item-list bucket-list" id="bucketList" aria-label="人生清单列表"></ul>
           <p class="empty-state" id="bucketEmpty">还没有人生清单，先写下一件想实现的事吧。</p>
@@ -173,7 +184,10 @@
         <span class="bucket-marker" aria-hidden="true"></span>
         <div class="bucket-content">
           <span class="item-title"></span>
-          <time class="bucket-target-date" hidden></time>
+          <span class="bucket-meta" hidden>
+            <span class="bucket-category-label" hidden></span>
+            <time class="bucket-target-date" hidden></time>
+          </span>
         </div>
         <div class="item-actions">
           <button class="icon-btn edit-action" type="button" title="编辑愿望和目标日期">✎</button>
@@ -185,6 +199,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="./share.js?v=20260727-bucket-list-mvp"></script>
-    <script src="./app.js?v=20260730-bucket-edit-actions"></script>
+    <script src="./app.js?v=20260730-bucket-categories"></script>
   </body>
 </html>

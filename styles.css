@@ -239,7 +239,7 @@ h3 {
 }
 
 .bucket-form {
-  grid-template-columns: minmax(0, 1fr) minmax(170px, 220px) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 190px) minmax(170px, 210px) auto;
 }
 
 input,
@@ -587,12 +587,52 @@ select:focus {
   justify-content: flex-start;
 }
 
+.bucket-category-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+}
+
+.bucket-category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.bucket-category-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 0 14px;
+  font-weight: 800;
+}
+
+.bucket-category-tab.active {
+  border-color: var(--brand);
+  background: var(--soft-green);
+  color: var(--brand-dark);
+}
+
+.bucket-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bucket-color);
+}
+
 .bucket-marker {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px var(--soft-amber);
+  background: var(--bucket-color, #9aa59f);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bucket-color, #9aa59f) 18%, white);
   flex: 0 0 auto;
   margin-left: 2px;
 }
@@ -608,15 +648,30 @@ select:focus {
   min-width: 0;
 }
 
-.bucket-target-date {
+.bucket-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 700;
 }
 
+.bucket-meta[hidden] {
+  display: none;
+}
+
+.bucket-category-label:not([hidden]) + .bucket-target-date:not([hidden])::before {
+  content: "· ";
+}
+
+.bucket-target-date {
+  color: var(--muted);
+}
+
 .bucket-edit-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(160px, 210px);
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 190px) minmax(160px, 210px);
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -959,10 +1014,10 @@ select:focus {
   }
 
   .bucket-form {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .bucket-form #bucketInput {
+  .bucket-form > * {
     grid-column: 1 / -1;
   }
 
