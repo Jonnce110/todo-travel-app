@@ -509,7 +509,7 @@ function renderBucketCategoryTabs(categories) {
 
 function getBucketCategoryColor(category) {
   if (!category) return "#9aa59f";
-  const colors = ["#c8673e", "#1c7066", "#5577b8", "#9a5db0", "#d0952e", "#3f8c63", "#c45d7c", "#64748b"];
+  const colors = ["#ff6b6b", "#ff9f1c", "#ffd43b", "#51cf66", "#22b8cf", "#4dabf7", "#845ef7", "#f06595"];
   let hash = 0;
   for (const character of category) hash = ((hash << 5) - hash + character.codePointAt(0)) | 0;
   return colors[Math.abs(hash) % colors.length];
