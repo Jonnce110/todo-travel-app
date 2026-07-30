@@ -23,8 +23,12 @@ create table if not exists public.bucket_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
+  target_date date,
   created_at timestamptz not null default now()
 );
+
+alter table public.bucket_items
+  add column if not exists target_date date;
 
 alter table public.todos enable row level security;
 alter table public.packing_lists enable row level security;

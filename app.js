@@ -110,6 +110,7 @@ const packingCounter = document.querySelector("#packingCounter");
 
 const bucketForm = document.querySelector("#bucketForm");
 const bucketInput = document.querySelector("#bucketInput");
+const bucketTargetDateInput = document.querySelector("#bucketTargetDateInput");
 const bucketList = document.querySelector("#bucketList");
 const bucketEmpty = document.querySelector("#bucketEmpty");
 const bucketCounter = document.querySelector("#bucketCounter");
@@ -366,17 +367,24 @@ function renderBucketItems() {
   bucketList.innerHTML = "";
   state.bucketItems.forEach((item) => {
     const node = document.querySelector("#bucketItemTemplate").content.firstElementChild.cloneNode(true);
+    const contentSlot = node.querySelector(".bucket-content");
     const titleSlot = node.querySelector(".item-title");
     if (state.editingBucketItemId === item.id) {
-      titleSlot.replaceChildren(createInlineEditForm(item.title, async (value) => {
+      contentSlot.replaceChildren(createBucketEditForm(item, async (title, targetDate) => {
         state.editingBucketItemId = null;
-        await updateBucketItem(item.id, { title: value });
+        await updateBucketItem(item.id, { title, target_date: targetDate || null });
       }, () => {
         state.editingBucketItemId = null;
         render();
       }));
     } else {
       titleSlot.textContent = item.title;
+      const targetDate = node.querySelector(".bucket-target-date");
+      if (item.target_date) {
+        targetDate.dateTime = item.target_date;
+        targetDate.textContent = `目标 ${formatTargetDate(item.target_date)}`;
+        targetDate.hidden = false;
+      }
     }
     node.querySelector(".edit-action").addEventListener("click", () => {
       state.editingBucketItemId = item.id;
@@ -399,6 +407,55 @@ function renderBucketItems() {
   });
   bucketCounter.textContent = `${state.bucketItems.length} 项`;
   bucketEmpty.classList.toggle("visible", state.bucketItems.length === 0);
+}
+
+function formatTargetDate(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return `${year}年${month}月${day}日`;
+}
+
+function createBucketEditForm(item, onSave, onCancel) {
+  const form = document.createElement("form");
+  form.className = "bucket-edit-form";
+  form.addEventListener("click", (event) => event.stopPropagation());
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.autocomplete = "off";
+  titleInput.value = item.title;
+  titleInput.setAttribute("aria-label", "修改愿望");
+
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  dateInput.value = item.target_date || "";
+  dateInput.setAttribute("aria-label", "修改目标日期（可选）");
+
+  const saveButton = document.createElement("button");
+  saveButton.className = "secondary-btn";
+  saveButton.type = "submit";
+  saveButton.textContent = "保存";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "icon-btn";
+  cancelButton.type = "button";
+  cancelButton.title = "取消";
+  cancelButton.textContent = "×";
+  cancelButton.addEventListener("click", onCancel);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = titleInput.value.trim();
+    if (!title) return;
+    await onSave(title, dateInput.value);
+  });
+
+  form.append(titleInput, dateInput, saveButton, cancelButton);
+  requestAnimationFrame(() => {
+    titleInput.focus();
+    titleInput.select();
+  });
+  return form;
 }
 
 function renderTemplates() {
@@ -901,11 +958,11 @@ async function deleteTodo(id) {
   setStatus("已云端同步");
 }
 
-async function addBucketItem(title) {
+async function addBucketItem(title, targetDate) {
   setStatus("正在保存...");
   const { data, error } = await supabaseClient
     .from("bucket_items")
-    .insert({ title, user_id: state.session.user.id })
+    .insert({ title, target_date: targetDate || null, user_id: state.session.user.id })
     .select()
     .single();
   if (error) return showCloudError(error);
@@ -1295,8 +1352,10 @@ bucketForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = bucketInput.value.trim();
   if (!title || !state.session) return;
+  const targetDate = bucketTargetDateInput.value;
   bucketInput.value = "";
-  await addBucketItem(title);
+  bucketTargetDateInput.value = "";
+  await addBucketItem(title, targetDate);
 });
 
 newListBtn.addEventListener("click", () => {

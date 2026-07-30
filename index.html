@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260727-bucket-list-mvp" />
+    <link rel="stylesheet" href="./styles.css?v=20260730-bucket-target-date" />
   </head>
   <body>
     <div class="app-shell">
@@ -111,13 +111,19 @@
             <span class="counter" id="bucketCounter">0 项</span>
           </div>
 
-          <form class="input-row" id="bucketForm">
+          <form class="input-row bucket-form" id="bucketForm">
             <input
               id="bucketInput"
               type="text"
               autocomplete="off"
               placeholder="新增人生清单"
               aria-label="新增人生清单"
+            />
+            <input
+              id="bucketTargetDateInput"
+              type="date"
+              aria-label="目标日期（可选）"
+              title="目标日期（可选）"
             />
             <button class="primary-btn" type="submit">添加</button>
           </form>
@@ -165,9 +171,12 @@
     <template id="bucketItemTemplate">
       <li class="list-item bucket-item">
         <span class="bucket-marker" aria-hidden="true"></span>
-        <span class="item-title"></span>
+        <div class="bucket-content">
+          <span class="item-title"></span>
+          <time class="bucket-target-date" hidden></time>
+        </div>
         <div class="item-actions">
-          <button class="icon-btn edit-action" type="button" title="编辑">✎</button>
+          <button class="icon-btn edit-action" type="button" title="编辑愿望和目标日期">✎</button>
           <button class="icon-btn delete-action" type="button" title="删除">×</button>
         </div>
       </li>
@@ -176,6 +185,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="./share.js?v=20260727-bucket-list-mvp"></script>
-    <script src="./app.js?v=20260727-bucket-list-mvp"></script>
+    <script src="./app.js?v=20260730-bucket-target-date"></script>
   </body>
 </html>

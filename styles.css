@@ -238,6 +238,10 @@ h3 {
   gap: 10px;
 }
 
+.bucket-form {
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 220px) auto;
+}
+
 input,
 select {
   width: 100%;
@@ -594,7 +598,28 @@ select:focus {
 }
 
 .bucket-item .item-title {
+  display: block;
+}
+
+.bucket-content {
+  display: grid;
   flex: 1 1 0;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bucket-target-date {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.bucket-edit-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 210px) auto auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
 }
 
 .editor {
@@ -931,6 +956,22 @@ select:focus {
 
   .view-tab {
     padding: 0 8px;
+  }
+
+  .bucket-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .bucket-form #bucketInput {
+    grid-column: 1 / -1;
+  }
+
+  .bucket-edit-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .bucket-edit-form input {
+    grid-column: 1 / -1;
   }
 
   .packing-layout {
