@@ -179,7 +179,12 @@ function showPackingTitlePopover(anchor, text) {
   packingTitlePopover = popover;
 }
 
-document.addEventListener("click", closePackingTitlePopover);
+document.addEventListener("click", (event) => {
+  if (!packingTitlePopover) return;
+  event.preventDefault();
+  event.stopPropagation();
+  closePackingTitlePopover();
+}, true);
 window.addEventListener("scroll", closePackingTitlePopover, true);
 
 function setStatus(message) {
