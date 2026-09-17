@@ -943,6 +943,19 @@ function renderTemplates() {
 
 }
 
+document.addEventListener("click", (event) => {
+  if (!state.openTemplateMenuId) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest(".template-menu, .template-menu-button")) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  state.openTemplateMenuId = null;
+  state.renamingTemplateId = null;
+  state.confirmingDeleteTemplateId = null;
+  renderTemplates();
+}, true);
+
 function setupTemplateDrag(card, template) {
   card.draggable = true;
   card.title = "拖动调整清单顺序";
@@ -1925,6 +1938,16 @@ todoForm.addEventListener("submit", async (event) => {
   todoInput.value = "";
   await addTodo(title);
 });
+
+// On iOS, the tap used to dismiss the keyboard can be replayed after the
+// viewport grows again, accidentally toggling the todo now under that tap.
+// Consume the first touch on the list while the add field is still focused.
+todoList.addEventListener("touchstart", (event) => {
+  if (document.activeElement !== todoInput) return;
+  event.preventDefault();
+  event.stopPropagation();
+  todoInput.blur();
+}, { capture: true, passive: false });
 
 completedTodosToggle.addEventListener("click", () => {
   state.showCompletedTodos = !state.showCompletedTodos;
