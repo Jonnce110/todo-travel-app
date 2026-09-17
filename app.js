@@ -4,6 +4,7 @@ const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1d3FtemRxeGN5dWRrd214enJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjA4ODIsImV4cCI6MjA5Nzc5Njg4Mn0.AWvrQyxp0eH7Wmj2UZwQapz4gCGRGKCFMWlmBiNTqNk";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const VALID_VIEWS = new Set(["todo", "packing", "bucket"]);
 
 const defaultTodos = [];
 
@@ -62,10 +63,12 @@ let state = {
   todos: [],
   templates: [],
   bucketItems: [],
+  activePackingView: "working",
   activeBucketCategory: null,
   activeTemplateId: null,
   openTemplateMenuId: null,
   addingChildForItemId: null,
+  showCompletedTodos: false,
   editingTodoId: null,
   editingBucketItemId: null,
   editingPackingItemId: null,
@@ -74,6 +77,8 @@ let state = {
   confirmingDeleteTodoId: null,
   confirmingDeleteBucketItemId: null,
   confirmingDeletePackingItemId: null,
+  draggingTodoId: null,
+  draggingTemplateId: null,
   collapsedPackingItemIds: new Set(),
   draggingPackingItemId: null,
   pendingShare: null,
@@ -98,11 +103,12 @@ const todoInput = document.querySelector("#todoInput");
 const todoList = document.querySelector("#todoList");
 const todoEmpty = document.querySelector("#todoEmpty");
 const todoCounter = document.querySelector("#todoCounter");
+const completedTodosToggle = document.querySelector("#completedTodosToggle");
 const saveStatus = document.querySelector("#saveStatus");
 
 const newListBtn = document.querySelector("#newListBtn");
 const templateList = document.querySelector("#templateList");
-const activeTemplateName = document.querySelector("#activeTemplateName");
+const packingViewTabs = document.querySelectorAll("[data-packing-view]");
 const packingItemForm = document.querySelector("#packingItemForm");
 const packingItemInput = document.querySelector("#packingItemInput");
 const packingItems = document.querySelector("#packingItems");
@@ -156,11 +162,66 @@ function setAuthMessage(message, isError = false) {
 }
 
 function getActiveTemplate() {
-  return state.templates.find((template) => template.id === state.activeTemplateId) || state.templates[0];
+  const visibleTemplates = getVisibleTemplates();
+  return visibleTemplates.find((template) => template.id === state.activeTemplateId) || visibleTemplates[0];
+}
+
+function getVisibleTemplates() {
+  return state.templates.filter((template) => (template.list_type || "working") === state.activePackingView);
+}
+
+function setActiveTemplateId(templateId) {
+  state.activeTemplateId = templateId || null;
+  if (templateId) setUiPreference(`active-${state.activePackingView}-list-id`, templateId);
+}
+
+function setPackingView(view) {
+  if (!new Set(["working", "template"]).has(view)) return;
+  state.activePackingView = view;
+  setUiPreference("packing-view", view);
+  packingViewTabs.forEach((tab) => {
+    const active = tab.dataset.packingView === view;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+  const rememberedId = getUiPreference(`active-${view}-list-id`);
+  const visibleTemplates = getVisibleTemplates();
+  setActiveTemplateId(
+    visibleTemplates.some((template) => template.id === rememberedId)
+      ? rememberedId
+      : visibleTemplates[0]?.id || null,
+  );
+  newListBtn.textContent = view === "working" ? "＋ 新建清单" : "＋ 新建模板";
+  packingItemInput.placeholder = view === "working" ? "新增一级目录" : "新增模板目录";
+  renderTemplates();
+  renderEditor();
+}
+
+function getUiPreference(key) {
+  if (!state.session?.user?.id) return null;
+  try {
+    return localStorage.getItem(`todo-travel:${state.session.user.id}:${key}`);
+  } catch {
+    return null;
+  }
+}
+
+function setUiPreference(key, value) {
+  if (!state.session?.user?.id) return;
+  try {
+    localStorage.setItem(`todo-travel:${state.session.user.id}:${key}`, value);
+  } catch {
+    // The app remains usable when browser storage is unavailable.
+  }
+}
+
+function getRememberedView() {
+  const view = getUiPreference("active-view");
+  return VALID_VIEWS.has(view) ? view : "todo";
 }
 
 function setActiveView(view) {
-  if (!state.session) return;
+  if (!state.session || !VALID_VIEWS.has(view)) return;
 
   viewTabs.forEach((tab) => {
     const active = tab.dataset.viewTab === view;
@@ -171,6 +232,7 @@ function setActiveView(view) {
   viewPanels.forEach((panel) => {
     panel.hidden = panel.dataset.viewPanel !== view;
   });
+  setUiPreference("active-view", view);
 }
 
 async function init() {
@@ -182,7 +244,7 @@ async function init() {
     state.session = session;
     updateAuthUi();
     if (session) {
-      setActiveView("todo");
+      setActiveView(getRememberedView());
       await loadCloudData();
       if (state.pendingShare && state.pendingShareAutoSave) {
         const snapshot = state.pendingShare;
@@ -204,7 +266,7 @@ async function init() {
   }
 
   if (state.session) {
-    setActiveView("todo");
+    setActiveView(getRememberedView());
     await loadCloudData();
   } else {
     loadSignedOutData();
@@ -247,6 +309,7 @@ function loadSignedOutData() {
   state.activeTemplateId = null;
   state.openTemplateMenuId = null;
   state.addingChildForItemId = null;
+  state.showCompletedTodos = false;
   state.editingTodoId = null;
   state.editingBucketItemId = null;
   state.editingPackingItemId = null;
@@ -255,6 +318,8 @@ function loadSignedOutData() {
   state.confirmingDeleteTodoId = null;
   state.confirmingDeleteBucketItemId = null;
   state.confirmingDeletePackingItemId = null;
+  state.draggingTodoId = null;
+  state.draggingTemplateId = null;
   state.collapsedPackingItemIds = new Set();
   state.draggingPackingItemId = null;
   setBucketFormExpanded(false);
@@ -267,16 +332,22 @@ function loadSignedOutData() {
 async function loadCloudData() {
   setStatus("正在同步...");
 
-  const [
-    { data: todos, error: todosError },
-    { data: templates, error: templatesError },
-    { data: bucketItems, error: bucketItemsError },
-  ] =
-    await Promise.all([
-      supabaseClient.from("todos").select("*").order("created_at", { ascending: false }),
-      supabaseClient.from("packing_lists").select("*").order("created_at", { ascending: false }),
-      supabaseClient.from("bucket_items").select("*").order("created_at", { ascending: false }),
-    ]);
+  let [todosResult, templatesResult, bucketItemsResult] = await Promise.all([
+    supabaseClient.from("todos").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+    supabaseClient.from("packing_lists").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+    supabaseClient.from("bucket_items").select("*").order("created_at", { ascending: false }),
+  ]);
+
+  if (todosResult.error?.message?.includes("sort_order")) {
+    todosResult = await supabaseClient.from("todos").select("*").order("created_at", { ascending: false });
+  }
+  if (templatesResult.error?.message?.includes("sort_order")) {
+    templatesResult = await supabaseClient.from("packing_lists").select("*").order("created_at", { ascending: false });
+  }
+
+  const { data: todos, error: todosError } = todosResult;
+  const { data: templates, error: templatesError } = templatesResult;
+  const { data: bucketItems, error: bucketItemsError } = bucketItemsResult;
 
   if (todosError || templatesError || bucketItemsError) {
     const message = todosError?.message || templatesError?.message || bucketItemsError?.message || "同步失败";
@@ -294,10 +365,12 @@ async function loadCloudData() {
   state.todos = todos;
   state.templates = templates.map((template) => ({
     ...template,
+    list_type: template.list_type || "working",
     items: normalizeItems(template.items),
   }));
   state.bucketItems = bucketItems;
-  state.activeTemplateId = state.activeTemplateId || state.templates[0]?.id || null;
+  const rememberedPackingView = getUiPreference("packing-view");
+  setPackingView(rememberedPackingView === "template" ? "template" : "working");
   render();
   setStatus("已云端同步");
 }
@@ -310,8 +383,10 @@ async function seedDefaultData() {
   }
   inserts.push(
     supabaseClient.from("packing_lists").insert(
-      defaultTemplates.map((template) => ({
+      defaultTemplates.map((template, index) => ({
         ...template,
+        list_type: "working",
+        sort_order: index,
         user_id: userId,
       })),
     ),
@@ -328,32 +403,53 @@ function render() {
 
 function renderTodos() {
   todoList.innerHTML = "";
-  state.todos.forEach((todo) => {
+  const activeTodos = state.todos.filter((todo) => !todo.done);
+  const completedTodos = state.todos.filter((todo) => todo.done);
+  const visibleTodos = state.showCompletedTodos
+    ? [...activeTodos, ...completedTodos]
+    : activeTodos;
+
+  visibleTodos.forEach((todo) => {
     const node = document.querySelector("#todoItemTemplate").content.firstElementChild.cloneNode(true);
+    node.dataset.todoId = todo.id;
     node.classList.toggle("done", todo.done);
     node.querySelector("input").checked = todo.done;
     const titleSlot = node.querySelector(".item-title");
+    const editButton = node.querySelector(".edit-action");
+    const deleteButton = node.querySelector(".delete-action");
     if (state.editingTodoId === todo.id) {
-      titleSlot.replaceChildren(createInlineEditForm(todo.title, async (value) => {
+      const editForm = createTodoEditForm(todo.title, async (value) => {
         state.editingTodoId = null;
         await updateTodo(todo.id, { title: value });
-      }, () => {
+      });
+      titleSlot.replaceChildren(editForm);
+
+      editButton.textContent = "✓";
+      editButton.title = "保存";
+      editButton.setAttribute("aria-label", "保存");
+      editButton.addEventListener("click", () => editForm.requestSubmit());
+
+      deleteButton.title = "取消";
+      deleteButton.setAttribute("aria-label", "取消");
+      deleteButton.addEventListener("click", () => {
         state.editingTodoId = null;
         render();
-      }));
+      });
     } else {
       titleSlot.textContent = todo.title;
+      setupTodoDrag(node, todo, todo.done ? completedTodos : activeTodos);
+      editButton.addEventListener("click", () => {
+        state.editingTodoId = todo.id;
+        state.confirmingDeleteTodoId = null;
+        render();
+      });
+      deleteButton.addEventListener("click", () => {
+        state.confirmingDeleteTodoId = todo.id;
+        render();
+      });
     }
     node.querySelector("input").addEventListener("change", async (event) => {
       await updateTodo(todo.id, { done: event.target.checked });
-    });
-    node.querySelector(".edit-action").addEventListener("click", () => {
-      state.editingTodoId = todo.id;
-      render();
-    });
-    node.querySelector(".delete-action").addEventListener("click", () => {
-      state.confirmingDeleteTodoId = todo.id;
-      render();
     });
     if (state.confirmingDeleteTodoId === todo.id) {
       node.append(createDeleteConfirmRow(async () => {
@@ -366,9 +462,73 @@ function renderTodos() {
     }
     todoList.append(node);
   });
-  const activeCount = state.todos.filter((todo) => !todo.done).length;
-  todoCounter.textContent = `${activeCount}/${state.todos.length} 项`;
-  todoEmpty.classList.toggle("visible", state.todos.length === 0);
+  todoCounter.textContent = `${activeTodos.length} 项待办`;
+  todoEmpty.textContent = state.todos.length === 0
+    ? "还没有待办，先加一件小事吧。"
+    : "当前待办都完成了，做得不错。";
+  todoEmpty.classList.toggle("visible", activeTodos.length === 0 && !state.showCompletedTodos);
+
+  completedTodosToggle.hidden = completedTodos.length === 0;
+  completedTodosToggle.textContent = state.showCompletedTodos
+    ? "收起已完成"
+    : "查看已完成";
+  completedTodosToggle.setAttribute("aria-expanded", String(state.showCompletedTodos));
+}
+
+function setupTodoDrag(row, todo, siblingTodos) {
+  row.draggable = true;
+  row.title = "拖动调整待办顺序";
+
+  row.addEventListener("dragstart", (event) => {
+    state.draggingTodoId = todo.id;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", todo.id);
+    row.classList.add("dragging");
+  });
+
+  row.addEventListener("dragover", (event) => {
+    if (!state.draggingTodoId || state.draggingTodoId === todo.id) return;
+    if (!siblingTodos.some((item) => item.id === state.draggingTodoId)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const rect = row.getBoundingClientRect();
+    const dropPosition = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    row.dataset.dropPosition = dropPosition;
+    row.classList.toggle("drag-over-before", dropPosition === "before");
+    row.classList.toggle("drag-over-after", dropPosition === "after");
+  });
+
+  row.addEventListener("dragleave", () => {
+    row.classList.remove("drag-over-before", "drag-over-after");
+    delete row.dataset.dropPosition;
+  });
+
+  row.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    const dropPosition = row.dataset.dropPosition || "before";
+    row.classList.remove("drag-over-before", "drag-over-after");
+    delete row.dataset.dropPosition;
+    const draggedTodoId = event.dataTransfer.getData("text/plain") || state.draggingTodoId;
+    state.draggingTodoId = null;
+    if (!draggedTodoId || draggedTodoId === todo.id) return;
+    const reordered = moveSiblingItem(siblingTodos, draggedTodoId, todo.id, dropPosition);
+    if (reordered === siblingTodos) return;
+
+    const activeTodos = state.todos.filter((item) => !item.done);
+    const completedTodos = state.todos.filter((item) => item.done);
+    state.todos = todo.done ? [...activeTodos, ...reordered] : [...reordered, ...completedTodos];
+    state.todos.forEach((item, index) => {
+      item.sort_order = index;
+    });
+    renderTodos();
+    await persistTodoOrder();
+  });
+
+  row.addEventListener("dragend", () => {
+    state.draggingTodoId = null;
+    row.classList.remove("dragging", "drag-over-before", "drag-over-after");
+    delete row.dataset.dropPosition;
+  });
 }
 
 function renderBucketItems() {
@@ -612,12 +772,17 @@ function setupCategoryCombobox(input, suggestions) {
 
 function renderTemplates() {
   templateList.innerHTML = "";
+  const visibleTemplates = getVisibleTemplates();
 
-  state.templates.forEach((template) => {
+  visibleTemplates.forEach((template) => {
     const card = document.createElement("div");
     card.className = "template-card";
+    card.dataset.templateId = template.id;
     card.classList.toggle("active", template.id === state.activeTemplateId);
     card.classList.toggle("menu-open", template.id === state.openTemplateMenuId);
+    if (state.session && state.renamingTemplateId !== template.id) {
+      setupTemplateDrag(card, template);
+    }
 
     const tab = document.createElement("button");
     tab.className = "template-tab";
@@ -626,7 +791,7 @@ function renderTemplates() {
     tab.querySelector("strong").textContent = template.name;
     tab.querySelector("span").textContent = `${countItems(template.items)} 件`;
     tab.addEventListener("click", () => {
-      state.activeTemplateId = template.id;
+      setActiveTemplateId(template.id);
       state.openTemplateMenuId = null;
       render();
     });
@@ -638,7 +803,7 @@ function renderTemplates() {
     menuButton.textContent = "⋯";
     menuButton.hidden = !state.session;
     menuButton.addEventListener("click", () => {
-      state.activeTemplateId = template.id;
+      setActiveTemplateId(template.id);
       state.openTemplateMenuId = state.openTemplateMenuId === template.id ? null : template.id;
       render();
     });
@@ -655,21 +820,34 @@ function renderTemplates() {
       render();
     });
 
-    const copyButton = document.createElement("button");
-    copyButton.type = "button";
-    copyButton.textContent = "复制为新清单";
-    copyButton.addEventListener("click", () => {
+    const useButton = document.createElement("button");
+    useButton.type = "button";
+    useButton.textContent = state.activePackingView === "working" ? "复制为新清单" : "用这个模板出发";
+    useButton.addEventListener("click", async () => {
       state.openTemplateMenuId = null;
-      if (state.session) createTemplate(template);
+      if (!state.session) return;
+      if (state.activePackingView === "working") {
+        await createPackingList(template, { listType: "working", name: `${template.name} 副本` });
+      } else {
+        await createPackingList(template, { listType: "working", name: `${template.name} 新行程`, switchView: true });
+      }
+    });
+
+    const saveAsTemplateButton = document.createElement("button");
+    saveAsTemplateButton.type = "button";
+    saveAsTemplateButton.textContent = "存到参考一下";
+    saveAsTemplateButton.addEventListener("click", async () => {
+      state.openTemplateMenuId = null;
+      await createPackingList(template, { listType: "template", name: template.name, activate: false });
     });
 
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "danger-menu-action";
     deleteButton.textContent = "删除";
-    deleteButton.disabled = state.templates.length <= 1;
+    deleteButton.disabled = state.activePackingView === "working" && visibleTemplates.length <= 1;
     deleteButton.addEventListener("click", () => {
-      if (state.templates.length <= 1) return;
+      if (state.activePackingView === "working" && visibleTemplates.length <= 1) return;
       state.confirmingDeleteTemplateId = template.id;
       state.renamingTemplateId = null;
       render();
@@ -683,7 +861,9 @@ function renderTemplates() {
       render();
       shareTemplate(template);
     });
-    menu.append(renameButton, copyButton, shareButton, deleteButton);
+    menu.append(renameButton, useButton);
+    if (state.activePackingView === "working") menu.append(saveAsTemplateButton);
+    menu.append(shareButton, deleteButton);
     if (state.renamingTemplateId === template.id) {
       menu.append(createInlineEditForm(template.name, async (value) => {
         state.renamingTemplateId = null;
@@ -710,17 +890,80 @@ function renderTemplates() {
 
 }
 
+function setupTemplateDrag(card, template) {
+  card.draggable = true;
+  card.title = "拖动调整清单顺序";
+
+  card.addEventListener("dragstart", (event) => {
+    if (event.target.closest(".template-menu")) {
+      event.preventDefault();
+      return;
+    }
+    state.draggingTemplateId = template.id;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", template.id);
+    card.classList.add("dragging");
+  });
+
+  card.addEventListener("dragover", (event) => {
+    if (!state.draggingTemplateId || state.draggingTemplateId === template.id) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const rect = card.getBoundingClientRect();
+    const horizontal = window.matchMedia("(max-width: 680px)").matches;
+    const dropPosition = horizontal
+      ? (event.clientX < rect.left + rect.width / 2 ? "before" : "after")
+      : (event.clientY < rect.top + rect.height / 2 ? "before" : "after");
+    card.dataset.dropPosition = dropPosition;
+    card.classList.toggle("drag-over-before", dropPosition === "before");
+    card.classList.toggle("drag-over-after", dropPosition === "after");
+  });
+
+  card.addEventListener("dragleave", () => {
+    card.classList.remove("drag-over-before", "drag-over-after");
+    delete card.dataset.dropPosition;
+  });
+
+  card.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    const dropPosition = card.dataset.dropPosition || "before";
+    card.classList.remove("drag-over-before", "drag-over-after");
+    delete card.dataset.dropPosition;
+    const draggedTemplateId = event.dataTransfer.getData("text/plain") || state.draggingTemplateId;
+    state.draggingTemplateId = null;
+    if (!draggedTemplateId || draggedTemplateId === template.id) return;
+    const visibleTemplates = getVisibleTemplates();
+    const reordered = moveSiblingItem(visibleTemplates, draggedTemplateId, template.id, dropPosition);
+    if (reordered === visibleTemplates) return;
+    const otherTemplates = state.templates.filter((item) => (item.list_type || "working") !== state.activePackingView);
+    state.templates = state.activePackingView === "working"
+      ? [...reordered, ...otherTemplates]
+      : [...otherTemplates, ...reordered];
+    reordered.forEach((item, index) => {
+      item.sort_order = index;
+    });
+    renderTemplates();
+    await persistTemplateOrder();
+  });
+
+  card.addEventListener("dragend", () => {
+    state.draggingTemplateId = null;
+    card.classList.remove("dragging", "drag-over-before", "drag-over-after");
+    delete card.dataset.dropPosition;
+  });
+}
+
 function renderEditor() {
   const template = getActiveTemplate();
   if (!template) {
-    activeTemplateName.textContent = "未选择清单";
     packingItems.innerHTML = "";
     packingCounter.textContent = "0 件";
+    packingEmpty.textContent = state.activePackingView === "working"
+      ? "还没有正在准备的清单。"
+      : "还没有模板，可以从“带点啥呢”存一份过来。";
     packingEmpty.classList.add("visible");
     return;
   }
-
-  activeTemplateName.textContent = template.name;
 
   packingItems.innerHTML = "";
   template.items.forEach((item) => {
@@ -729,11 +972,17 @@ function renderEditor() {
 
   const packedCount = countPackedItems(template.items);
   const totalCount = countItems(template.items);
-  packingCounter.textContent = `${packedCount}/${totalCount} 件`;
+  packingCounter.textContent = state.activePackingView === "working"
+    ? `${packedCount}/${totalCount} 件`
+    : `${totalCount} 件`;
+  packingEmpty.textContent = state.activePackingView === "working"
+    ? "这个清单还没有物品。"
+    : "这个模板还没有物品。";
   packingEmpty.classList.toggle("visible", totalCount === 0);
 }
 
 function renderPackingItem(template, item, depth, siblingItems) {
+  const isReferenceTemplate = (template.list_type || "working") === "template";
   const wrapper = document.createElement("li");
   wrapper.className = "tree-item";
   wrapper.classList.toggle("packing-group", depth === 0);
@@ -743,10 +992,30 @@ function renderPackingItem(template, item, depth, siblingItems) {
   const row = document.querySelector("#packingItemTemplate").content.firstElementChild.cloneNode(true);
   row.classList.toggle("packing-group-row", depth === 0);
   row.classList.toggle("packing-card-item", depth > 0);
-  row.classList.toggle("done", item.packed);
+  row.classList.toggle("done", item.packed && !isReferenceTemplate);
   row.querySelector("input").checked = item.packed;
-  row.querySelector("input").disabled = !state.session;
-  row.querySelector(".item-title").textContent = item.title;
+  row.querySelector("input").disabled = !state.session || isReferenceTemplate;
+  row.querySelector("input").hidden = isReferenceTemplate;
+  const itemTitle = row.querySelector(".item-title");
+  itemTitle.textContent = item.title;
+  if (depth > 0) {
+    itemTitle.classList.add("expandable-packing-title");
+    itemTitle.tabIndex = 0;
+    itemTitle.setAttribute("role", "button");
+    itemTitle.setAttribute("aria-expanded", "false");
+    itemTitle.title = "点击展开完整名称";
+    const toggleFullTitle = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const expanded = wrapper.classList.toggle("title-expanded");
+      itemTitle.setAttribute("aria-expanded", String(expanded));
+      itemTitle.title = expanded ? "点击收起名称" : "点击展开完整名称";
+    };
+    itemTitle.addEventListener("click", toggleFullTitle);
+    itemTitle.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") toggleFullTitle(event);
+    });
+  }
 
   const childCount = countItems(item.children);
   const packedChildCount = countPackedItems(item.children);
@@ -812,7 +1081,7 @@ function renderPackingItem(template, item, depth, siblingItems) {
 
     const meta = document.createElement("span");
     meta.className = "group-count";
-    meta.textContent = `${packedChildCount}/${childCount}`;
+    meta.textContent = isReferenceTemplate ? `${childCount}` : `${packedChildCount}/${childCount}`;
     row.querySelector(".check-row").append(meta);
     if (!state.session) {
       row.querySelector(".add-child-action").remove();
@@ -828,7 +1097,7 @@ function renderPackingItem(template, item, depth, siblingItems) {
   }
 
   row.querySelector("input").addEventListener("change", async (event) => {
-    if (!state.session) return;
+    if (!state.session || isReferenceTemplate) return;
     updateItemById(template.items, item.id, (entry) => {
       entry.packed = event.target.checked;
     });
@@ -1055,6 +1324,32 @@ function createInlineEditForm(currentValue, onSave, onCancel) {
   return form;
 }
 
+function createTodoEditForm(currentValue, onSave) {
+  const form = document.createElement("form");
+  form.className = "todo-edit-form";
+  form.addEventListener("click", (event) => event.stopPropagation());
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.value = currentValue;
+  input.setAttribute("aria-label", "修改待办");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const value = input.value.trim();
+    if (!value) return;
+    await onSave(value);
+  });
+
+  form.append(input);
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
+  return form;
+}
+
 function createDeleteConfirmRow(onConfirm, onCancel) {
   const row = document.createElement("div");
   row.className = "delete-confirm-row";
@@ -1076,14 +1371,33 @@ function createDeleteConfirmRow(onConfirm, onCancel) {
 
 async function addTodo(title) {
   setStatus("正在保存...");
+  const firstSortOrder = state.todos.reduce(
+    (minimum, todo) => Math.min(minimum, Number(todo.sort_order) || 0),
+    0,
+  ) - 1;
   const { data, error } = await supabaseClient
     .from("todos")
-    .insert({ title, user_id: state.session.user.id })
+    .insert({ title, sort_order: firstSortOrder, user_id: state.session.user.id })
     .select()
     .single();
   if (error) return showCloudError(error);
   state.todos.unshift(data);
   render();
+  setStatus("已云端同步");
+}
+
+async function persistTodoOrder() {
+  setStatus("正在保存顺序...");
+  const rows = state.todos.map((todo) => ({
+    id: todo.id,
+    user_id: state.session.user.id,
+    title: todo.title,
+    done: todo.done,
+    sort_order: todo.sort_order,
+    created_at: todo.created_at,
+  }));
+  const { error } = await supabaseClient.from("todos").upsert(rows, { onConflict: "id" });
+  if (error) return showCloudError(error);
   setStatus("已云端同步");
 }
 
@@ -1343,6 +1657,10 @@ function openShareErrorModal() {
 async function saveSharedList(snapshot) {
   if (!state.session) return;
   setStatus("正在保存...");
+  const firstSortOrder = state.templates.filter((template) => (template.list_type || "working") === "working").reduce(
+    (minimum, template) => Math.min(minimum, Number(template.sort_order) || 0),
+    0,
+  ) - 1;
   const { data, error } = await supabaseClient
     .from("packing_lists")
     .insert({
@@ -1352,20 +1670,24 @@ async function saveSharedList(snapshot) {
       notes: snapshot.notes || "",
       priority: snapshot.priority || "标准",
       items: cloneItems(snapshot.items),
+      list_type: "working",
+      sort_order: firstSortOrder,
     })
     .select()
     .single();
   if (error) return showCloudError(error);
-  state.templates.unshift({ ...data, items: normalizeItems(data.items) });
-  state.activeTemplateId = data.id;
+  state.templates.unshift({ ...data, list_type: "working", items: normalizeItems(data.items) });
+  setPackingView("working");
+  setActiveTemplateId(data.id);
   setActiveView("packing");
   render();
   setStatus("已从分享保存");
 }
 
-async function createTemplate(source) {
+async function createPackingList(source, options = {}) {
+  const listType = options.listType || state.activePackingView;
   const base = source || {
-    name: "新的出行清单",
+    name: listType === "working" ? "新的出行清单" : "新的参考模板",
     category: "自定义",
     notes: "",
     priority: "标准",
@@ -1373,23 +1695,49 @@ async function createTemplate(source) {
   };
 
   setStatus("正在保存...");
+  const firstSortOrder = state.templates.filter((template) => (template.list_type || "working") === listType).reduce(
+    (minimum, template) => Math.min(minimum, Number(template.sort_order) || 0),
+    0,
+  ) - 1;
   const { data, error } = await supabaseClient
     .from("packing_lists")
     .insert({
       user_id: state.session.user.id,
-      name: source ? `${base.name} 副本` : base.name,
+      name: options.name || base.name,
       category: base.category,
       notes: base.notes || "",
       priority: base.priority || "标准",
       items: cloneItems(base.items),
+      list_type: listType,
+      sort_order: firstSortOrder,
     })
     .select()
     .single();
 
   if (error) return showCloudError(error);
-  state.templates.unshift({ ...data, items: normalizeItems(data.items) });
-  state.activeTemplateId = data.id;
+  state.templates.unshift({ ...data, list_type: listType, items: normalizeItems(data.items) });
+  if (options.switchView) setPackingView(listType);
+  if (options.activate !== false) setActiveTemplateId(data.id);
   render();
+  setStatus(listType === "template" ? "已存到参考一下" : "已云端同步");
+}
+
+async function persistTemplateOrder() {
+  setStatus("正在保存顺序...");
+  const rows = state.templates.map((template) => ({
+    id: template.id,
+    user_id: state.session.user.id,
+    name: template.name,
+    category: template.category,
+    notes: template.notes || "",
+    priority: template.priority || "标准",
+    items: template.items,
+    list_type: template.list_type || "working",
+    sort_order: template.sort_order,
+    created_at: template.created_at,
+  }));
+  const { error } = await supabaseClient.from("packing_lists").upsert(rows, { onConflict: "id" });
+  if (error) return showCloudError(error);
   setStatus("已云端同步");
 }
 
@@ -1414,7 +1762,7 @@ async function deleteTemplate(id) {
   const { error } = await supabaseClient.from("packing_lists").delete().eq("id", id);
   if (error) return showCloudError(error);
   state.templates = state.templates.filter((template) => template.id !== id);
-  state.activeTemplateId = state.templates[0]?.id || null;
+  setActiveTemplateId(getVisibleTemplates()[0]?.id || null);
   render();
   setStatus("已云端同步");
 }
@@ -1501,12 +1849,28 @@ viewTabs.forEach((tab) => {
   });
 });
 
+packingViewTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    state.openTemplateMenuId = null;
+    state.renamingTemplateId = null;
+    state.confirmingDeleteTemplateId = null;
+    setPackingView(tab.dataset.packingView);
+  });
+});
+
 todoForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = todoInput.value.trim();
   if (!title || !state.session) return;
   todoInput.value = "";
   await addTodo(title);
+});
+
+completedTodosToggle.addEventListener("click", () => {
+  state.showCompletedTodos = !state.showCompletedTodos;
+  state.editingTodoId = null;
+  state.confirmingDeleteTodoId = null;
+  renderTodos();
 });
 
 bucketForm.addEventListener("submit", async (event) => {
@@ -1524,7 +1888,7 @@ bucketCancelAddBtn.addEventListener("click", () => setBucketFormExpanded(false))
 setupCategoryCombobox(bucketCategoryInput, bucketCategorySuggestions);
 
 newListBtn.addEventListener("click", () => {
-  if (state.session) createTemplate();
+  if (state.session) createPackingList(null, { listType: state.activePackingView });
 });
 
 packingItemForm.addEventListener("submit", async (event) => {

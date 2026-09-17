@@ -99,13 +99,6 @@ h3 {
   font-size: 1rem;
 }
 
-#activeTemplateName {
-  font-size: clamp(1.28rem, 2vw, 1.72rem);
-  line-height: 1.18;
-  letter-spacing: 0;
-  font-weight: 850;
-}
-
 .section-header p {
   margin-bottom: 0;
   color: var(--muted);
@@ -174,6 +167,33 @@ h3 {
 .view-tab:not(.active):hover {
   background: #eef5f2;
   color: var(--ink);
+}
+
+.packing-view-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  padding: 4px;
+}
+
+.packing-view-tab {
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 18px;
+  font-weight: 850;
+}
+
+.packing-view-tab.active {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(28, 112, 102, 0.18);
 }
 
 [data-view-panel][hidden] {
@@ -372,6 +392,13 @@ select:focus {
   transform: translateY(-1px);
 }
 
+.add-icon-btn {
+  width: 44px;
+  padding: 0;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
 .danger-btn {
   background: var(--danger-soft);
   color: var(--danger);
@@ -438,7 +465,28 @@ select:focus {
   min-width: 0;
 }
 
-.check-row input {
+#todoList > .list-item[draggable="true"] {
+  cursor: grab;
+}
+
+#todoList > .list-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+#todoList > .list-item.dragging {
+  opacity: 0.55;
+  box-shadow: var(--shadow-soft);
+}
+
+#todoList > .list-item.drag-over-before {
+  box-shadow: inset 0 3px 0 var(--brand);
+}
+
+#todoList > .list-item.drag-over-after {
+  box-shadow: inset 0 -3px 0 var(--brand);
+}
+
+.check-row > input[type="checkbox"] {
   width: 19px;
   height: 19px;
   accent-color: var(--brand);
@@ -477,6 +525,31 @@ select:focus {
 
 .empty-state.visible {
   display: block;
+}
+
+.completed-todos-toggle {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 800;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.completed-todos-toggle:hover {
+  border-color: var(--line-strong);
+  background: var(--panel-soft);
+  color: var(--ink);
+}
+
+.completed-todos-toggle[hidden] {
+  display: none;
 }
 
 .packing-layout {
@@ -527,6 +600,26 @@ select:focus {
 .template-card:not(.active):hover {
   border-color: var(--line-strong);
   box-shadow: var(--shadow-soft);
+}
+
+.template-card[draggable="true"] {
+  cursor: grab;
+}
+
+.template-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.template-card.dragging {
+  opacity: 0.55;
+}
+
+.template-card.drag-over-before {
+  box-shadow: inset 0 3px 0 var(--brand);
+}
+
+.template-card.drag-over-after {
+  box-shadow: inset 0 -3px 0 var(--brand);
 }
 
 .template-tab {
@@ -618,6 +711,15 @@ select:focus {
   gap: 8px;
   align-items: center;
   width: 100%;
+}
+
+.todo-edit-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.todo-edit-form input {
+  min-width: 0;
 }
 
 .template-menu .inline-edit-form {
@@ -751,14 +853,6 @@ select:focus {
   min-width: 0;
 }
 
-.template-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 44px;
-}
-
 .form-actions {
   display: flex;
   gap: 10px;
@@ -766,9 +860,16 @@ select:focus {
 }
 
 .items-toolbar {
-  margin-top: 14px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.new-list-button {
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 13px;
 }
 
 .packing-items {
@@ -920,17 +1021,20 @@ select:focus {
 }
 
 .child-card-grid > .packing-card {
-  height: 100%;
+  height: auto;
+  align-self: start;
 }
 
 .packing-card > .list-item {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
   align-items: center;
-  height: 100%;
+  gap: 4px;
+  height: auto;
   min-height: 52px;
   margin-left: 0;
-  padding: 9px 34px 9px 10px;
+  padding: 9px 6px 9px 10px;
   border-color: var(--line);
   background: #fff;
   box-shadow: 0 1px 0 rgba(28, 44, 38, 0.04);
@@ -961,10 +1065,9 @@ select:focus {
 }
 
 .packing-card .item-actions {
-  position: absolute;
-  top: 50%;
-  right: 6px;
-  transform: translateY(-50%);
+  position: static;
+  align-self: center;
+  transform: none;
 }
 
 .packing-card .icon-btn {
@@ -1000,6 +1103,36 @@ select:focus {
   white-space: nowrap;
 }
 
+.packing-card .expandable-packing-title {
+  cursor: zoom-in;
+}
+
+.packing-card .expandable-packing-title:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid rgba(28, 112, 102, 0.28);
+  outline-offset: 2px;
+}
+
+.child-card-grid > .packing-card.title-expanded {
+  grid-column: 1 / -1;
+}
+
+.packing-card.title-expanded > .list-item {
+  height: auto;
+  min-height: 52px;
+}
+
+.packing-card.title-expanded > .list-item .item-title {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.packing-card.title-expanded .expandable-packing-title {
+  cursor: zoom-out;
+}
+
 .packing-card .packing-children {
   gap: 6px;
   padding-left: 10px;
@@ -1008,7 +1141,7 @@ select:focus {
 
 .packing-card .packing-card > .list-item {
   min-height: 46px;
-  padding: 8px 32px 8px 8px;
+  padding: 8px 6px 8px 8px;
 }
 
 @media (hover: none) {
@@ -1083,6 +1216,12 @@ select:focus {
     padding: 0 8px;
   }
 
+  .packing-view-tabs {
+    display: grid;
+    width: 100%;
+    margin-bottom: 14px;
+  }
+
   .bucket-form {
     grid-template-columns: minmax(0, 1fr) auto auto;
   }
@@ -1115,31 +1254,24 @@ select:focus {
     min-width: 0;
   }
 
-  .list-sidebar .full-width {
+  .new-list-button {
     margin-bottom: 10px;
   }
 
   .template-list {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    margin: 0 -14px;
-    overflow-x: auto;
-    padding: 0 14px 8px;
-    scrollbar-width: none;
-    scroll-snap-type: x proximity;
-  }
-
-  .template-list::-webkit-scrollbar {
-    display: none;
+    width: 100%;
+    min-width: 0;
+    padding-bottom: 4px;
   }
 
   .template-card {
-    flex: 0 0 auto;
     grid-template-columns: minmax(0, 1fr) 34px;
-    min-width: 142px;
-    max-width: 210px;
+    width: 100%;
+    min-width: 0;
     border-radius: 999px;
-    scroll-snap-align: start;
   }
 
   .template-card.menu-open {
@@ -1148,6 +1280,14 @@ select:focus {
 
   .template-card.active {
     box-shadow: 0 6px 16px rgba(28, 112, 102, 0.13);
+  }
+
+  .template-card.drag-over-before {
+    box-shadow: inset 3px 0 0 var(--brand);
+  }
+
+  .template-card.drag-over-after {
+    box-shadow: inset -3px 0 0 var(--brand);
   }
 
   .template-tab {
@@ -1199,11 +1339,6 @@ select:focus {
   .template-menu button {
     min-height: 44px;
     text-align: center;
-  }
-
-  .template-actions {
-    align-items: stretch;
-    flex-direction: column;
   }
 
   .packing-panel {
@@ -1278,6 +1413,12 @@ select:focus {
   .group-count {
     flex-basis: 100%;
     width: fit-content;
+  }
+}
+
+@media (max-width: 390px) {
+  .template-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

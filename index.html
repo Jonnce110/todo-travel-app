@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260730-bright-category-colors" />
+    <link rel="stylesheet" href="./styles.css?v=20260917-expandable-packing-titles" />
   </head>
   <body>
     <div class="app-shell">
@@ -50,7 +50,6 @@
           <div class="section-header">
             <div>
               <h2 id="todoTitle">日常待办</h2>
-              <p>记录今天要处理的事项。</p>
             </div>
             <span class="counter" id="todoCounter">0 项</span>
           </div>
@@ -63,26 +62,32 @@
               placeholder="新增待办"
               aria-label="新增待办"
             />
-            <button class="primary-btn" type="submit">添加</button>
+            <button class="primary-btn add-icon-btn" type="submit" aria-label="添加待办" title="添加待办">+</button>
           </form>
 
           <ul class="item-list" id="todoList" aria-label="待办列表"></ul>
           <p class="empty-state" id="todoEmpty">还没有待办，先加一件小事吧。</p>
+          <button
+            class="completed-todos-toggle"
+            id="completedTodosToggle"
+            type="button"
+            aria-expanded="false"
+            hidden
+          ></button>
         </section>
 
         <section class="panel packing-panel" id="packingPanel" data-view-panel="packing" aria-label="出行清单" hidden>
+          <nav class="packing-view-tabs" aria-label="出行清单类型">
+            <button class="packing-view-tab active" type="button" data-packing-view="working" aria-selected="true">带点啥呢</button>
+            <button class="packing-view-tab" type="button" data-packing-view="template" aria-selected="false">参考一下</button>
+          </nav>
           <div class="packing-layout">
             <aside class="list-sidebar" aria-label="出行清单列表">
-              <button class="secondary-btn full-width" id="newListBtn" type="button">新建清单</button>
+              <button class="secondary-btn new-list-button" id="newListBtn" type="button">＋ 新建清单</button>
               <nav class="template-list" id="templateList"></nav>
             </aside>
 
             <div class="editor">
-              <div class="template-actions">
-                <h3 id="activeTemplateName">未选择清单</h3>
-                <span class="counter" id="packingCounter">0 件</span>
-              </div>
-
               <div class="items-toolbar">
                 <form class="input-row" id="packingItemForm">
                   <input
@@ -92,8 +97,9 @@
                     placeholder="新增一级目录"
                     aria-label="新增出行一级目录"
                   />
-                  <button class="secondary-btn" type="submit">加入</button>
+                  <button class="secondary-btn add-icon-btn" type="submit" aria-label="添加一级目录" title="添加一级目录">+</button>
                 </form>
+                <span class="counter" id="packingCounter">0 件</span>
               </div>
 
               <ul class="item-list packing-items" id="packingItems" aria-label="出行物品列表"></ul>
@@ -205,6 +211,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="./share.js?v=20260727-bucket-list-mvp"></script>
-    <script src="./app.js?v=20260730-bright-category-colors"></script>
+    <script src="./app.js?v=20260917-expandable-packing-titles"></script>
   </body>
 </html>
