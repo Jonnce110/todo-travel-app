@@ -86,14 +86,16 @@
             <div class="editor">
               <div class="items-toolbar">
                 <form class="input-row packing-root-form" id="packingItemForm" hidden>
-                  <input
-                    id="packingItemInput"
-                    type="text"
-                    autocomplete="off"
-                    placeholder="新增一级目录"
-                    aria-label="新增出行一级目录"
-                  />
-                  <button class="secondary-btn add-icon-btn" type="submit" aria-label="添加一级目录" title="添加一级目录">+</button>
+                  <div class="packing-entry-field">
+                    <input
+                      id="packingItemInput"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="新增分类"
+                      aria-label="新增分类"
+                    />
+                    <button class="secondary-btn add-icon-btn" type="submit" aria-label="添加分类" title="添加分类">+</button>
+                  </div>
                   <button class="icon-btn" id="packingCancelRootBtn" type="button" aria-label="取消新增目录" title="取消">×</button>
                 </form>
               </div>
@@ -207,6 +209,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="./share.js?v=20260727-bucket-list-mvp"></script>
-    <script src="./app.js?v=20260917-menu-click-guard"></script>
+    <script src="./app.js?v=20260917-inline-category-add"></script>
   </body>
 </html>

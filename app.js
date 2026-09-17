@@ -226,7 +226,12 @@ function setPackingView(view) {
   newListBtn.textContent = "+";
   newListBtn.setAttribute("aria-label", newListLabel);
   newListBtn.title = newListLabel;
-  packingItemInput.placeholder = view === "working" ? "新增一级目录" : "新增模板目录";
+  const categoryLabel = view === "working" ? "新增分类" : "新增模板分类";
+  const categorySubmitButton = packingItemForm.querySelector('[type="submit"]');
+  packingItemInput.placeholder = categoryLabel;
+  packingItemInput.setAttribute("aria-label", categoryLabel);
+  categorySubmitButton.setAttribute("aria-label", categoryLabel);
+  categorySubmitButton.title = categoryLabel;
   renderTemplates();
   renderEditor();
 }

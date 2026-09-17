@@ -898,11 +898,30 @@ select:focus {
 }
 
 .packing-root-form {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .packing-root-form[hidden] {
   display: none;
+}
+
+.packing-entry-field {
+  position: relative;
+  min-width: 0;
+}
+
+.packing-entry-field input {
+  padding-right: 48px;
+}
+
+.packing-entry-field .add-icon-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  min-height: 36px;
+  border-radius: 6px;
+  box-shadow: none;
 }
 
 .new-list-button {
@@ -1447,7 +1466,7 @@ select:focus {
   }
 
   .packing-root-form {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .input-row.bucket-form {
