@@ -258,6 +258,34 @@ h3 {
   gap: 10px;
 }
 
+.todo-input-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.todo-counter {
+  box-shadow: none;
+}
+
+.todo-entry-field {
+  position: relative;
+  min-width: 0;
+}
+
+.todo-entry-field input {
+  padding-right: 48px;
+}
+
+.todo-entry-field .add-icon-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  min-height: 36px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
 .bucket-form {
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto;
 }
@@ -623,6 +651,9 @@ select:focus {
 }
 
 .template-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   min-height: 58px;
   border: 0;
@@ -640,13 +671,16 @@ select:focus {
 }
 
 .template-tab strong {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 1.04rem;
   line-height: 1.25;
   font-weight: 850;
 }
 
 .template-tab span {
-  margin-top: 5px;
+  flex: 0 0 auto;
+  margin-top: 0;
   color: var(--muted);
   font-size: 0.86rem;
 }
@@ -860,16 +894,26 @@ select:focus {
 }
 
 .items-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
+  display: block;
+}
+
+.packing-root-form {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.packing-root-form[hidden] {
+  display: none;
 }
 
 .new-list-button {
-  width: fit-content;
-  min-height: 38px;
-  padding: 0 13px;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 1.15rem;
+  justify-self: start;
 }
 
 .packing-items {
@@ -1103,34 +1147,30 @@ select:focus {
   white-space: nowrap;
 }
 
-.packing-card .expandable-packing-title {
-  cursor: zoom-in;
+.packing-card .truncated-packing-title {
+  cursor: help;
 }
 
-.packing-card .expandable-packing-title:focus-visible {
+.packing-card .truncated-packing-title:focus-visible {
   border-radius: 4px;
   outline: 2px solid rgba(28, 112, 102, 0.28);
   outline-offset: 2px;
 }
 
-.child-card-grid > .packing-card.title-expanded {
-  grid-column: 1 / -1;
-}
-
-.packing-card.title-expanded > .list-item {
-  height: auto;
-  min-height: 52px;
-}
-
-.packing-card.title-expanded > .list-item .item-title {
-  overflow: visible;
+.packing-title-popover {
+  position: fixed;
+  z-index: 60;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 10px 12px;
+  box-shadow: 0 12px 30px rgba(28, 44, 38, 0.18);
+  font-size: 0.94rem;
+  font-weight: 750;
+  line-height: 1.4;
   overflow-wrap: anywhere;
-  text-overflow: clip;
-  white-space: normal;
-}
-
-.packing-card.title-expanded .expandable-packing-title {
-  cursor: zoom-out;
+  pointer-events: none;
 }
 
 .packing-card .packing-children {
@@ -1254,13 +1294,10 @@ select:focus {
     min-width: 0;
   }
 
-  .new-list-button {
-    margin-bottom: 10px;
-  }
-
   .template-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
     gap: 8px;
     width: 100%;
     min-width: 0;
@@ -1268,10 +1305,18 @@ select:focus {
   }
 
   .template-card {
+    flex: 1 1 142px;
     grid-template-columns: minmax(0, 1fr) 34px;
-    width: 100%;
+    width: auto;
     min-width: 0;
+    max-width: 210px;
     border-radius: 999px;
+  }
+
+  .new-list-button {
+    width: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
   }
 
   .template-card.menu-open {
@@ -1310,7 +1355,7 @@ select:focus {
   }
 
   .template-tab span {
-    margin-top: 2px;
+    margin-top: 0;
     font-size: 0.74rem;
   }
 
@@ -1397,6 +1442,14 @@ select:focus {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
+  .todo-input-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .packing-root-form {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
   .input-row.bucket-form {
     grid-template-columns: minmax(0, 1fr) auto auto;
   }
@@ -1417,8 +1470,8 @@ select:focus {
 }
 
 @media (max-width: 390px) {
-  .template-list {
-    grid-template-columns: minmax(0, 1fr);
+  .template-card {
+    flex-basis: 134px;
   }
 }
 

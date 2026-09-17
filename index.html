@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>做了么</title>
-    <link rel="stylesheet" href="./styles.css?v=20260917-expandable-packing-titles" />
+    <link rel="stylesheet" href="./styles.css?v=20260917-inline-todo-add" />
   </head>
   <body>
     <div class="app-shell">
@@ -46,23 +46,19 @@
       </nav>
 
       <main class="workspace">
-        <section class="panel todo-panel" id="todoPanel" data-view-panel="todo" aria-labelledby="todoTitle">
-          <div class="section-header">
-            <div>
-              <h2 id="todoTitle">日常待办</h2>
+        <section class="panel todo-panel" id="todoPanel" data-view-panel="todo" aria-label="日常待办">
+          <form class="input-row todo-input-row" id="todoForm">
+            <div class="todo-entry-field">
+              <input
+                id="todoInput"
+                type="text"
+                autocomplete="off"
+                placeholder="新增待办"
+                aria-label="新增待办"
+              />
+              <button class="primary-btn add-icon-btn" type="submit" aria-label="添加待办" title="添加待办">+</button>
             </div>
-            <span class="counter" id="todoCounter">0 项</span>
-          </div>
-
-          <form class="input-row" id="todoForm">
-            <input
-              id="todoInput"
-              type="text"
-              autocomplete="off"
-              placeholder="新增待办"
-              aria-label="新增待办"
-            />
-            <button class="primary-btn add-icon-btn" type="submit" aria-label="添加待办" title="添加待办">+</button>
+            <span class="counter todo-counter" id="todoCounter">0 to GO</span>
           </form>
 
           <ul class="item-list" id="todoList" aria-label="待办列表"></ul>
@@ -83,13 +79,13 @@
           </nav>
           <div class="packing-layout">
             <aside class="list-sidebar" aria-label="出行清单列表">
-              <button class="secondary-btn new-list-button" id="newListBtn" type="button">＋ 新建清单</button>
+              <button class="secondary-btn new-list-button" id="newListBtn" type="button" aria-label="新建清单" title="新建清单">+</button>
               <nav class="template-list" id="templateList"></nav>
             </aside>
 
             <div class="editor">
               <div class="items-toolbar">
-                <form class="input-row" id="packingItemForm">
+                <form class="input-row packing-root-form" id="packingItemForm" hidden>
                   <input
                     id="packingItemInput"
                     type="text"
@@ -98,8 +94,8 @@
                     aria-label="新增出行一级目录"
                   />
                   <button class="secondary-btn add-icon-btn" type="submit" aria-label="添加一级目录" title="添加一级目录">+</button>
+                  <button class="icon-btn" id="packingCancelRootBtn" type="button" aria-label="取消新增目录" title="取消">×</button>
                 </form>
-                <span class="counter" id="packingCounter">0 件</span>
               </div>
 
               <ul class="item-list packing-items" id="packingItems" aria-label="出行物品列表"></ul>
@@ -211,6 +207,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
     <script src="./share.js?v=20260727-bucket-list-mvp"></script>
-    <script src="./app.js?v=20260917-expandable-packing-titles"></script>
+    <script src="./app.js?v=20260917-todo-counter-to-go"></script>
   </body>
 </html>

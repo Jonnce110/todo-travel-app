@@ -68,6 +68,7 @@ let state = {
   activeTemplateId: null,
   openTemplateMenuId: null,
   addingChildForItemId: null,
+  addingPackingRoot: false,
   showCompletedTodos: false,
   editingTodoId: null,
   editingBucketItemId: null,
@@ -111,9 +112,9 @@ const templateList = document.querySelector("#templateList");
 const packingViewTabs = document.querySelectorAll("[data-packing-view]");
 const packingItemForm = document.querySelector("#packingItemForm");
 const packingItemInput = document.querySelector("#packingItemInput");
+const packingCancelRootBtn = document.querySelector("#packingCancelRootBtn");
 const packingItems = document.querySelector("#packingItems");
 const packingEmpty = document.querySelector("#packingEmpty");
-const packingCounter = document.querySelector("#packingCounter");
 
 const bucketForm = document.querySelector("#bucketForm");
 const bucketAddBtn = document.querySelector("#bucketAddBtn");
@@ -131,6 +132,7 @@ const modalOverlay = document.querySelector("#modalOverlay");
 const modalBody = document.querySelector("#modalBody");
 const modalClose = document.querySelector("#modalClose");
 let onModalClose = null;
+let packingTitlePopover = null;
 
 function openModal(buildBody, handleClose) {
   modalBody.innerHTML = "";
@@ -151,6 +153,34 @@ modalClose.addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", (event) => {
   if (event.target === modalOverlay) closeModal();
 });
+
+function closePackingTitlePopover() {
+  packingTitlePopover?.remove();
+  packingTitlePopover = null;
+}
+
+function showPackingTitlePopover(anchor, text) {
+  closePackingTitlePopover();
+  const popover = document.createElement("div");
+  popover.className = "packing-title-popover";
+  popover.textContent = text;
+  popover.setAttribute("role", "tooltip");
+  document.body.append(popover);
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const width = Math.min(300, window.innerWidth - 24);
+  const left = Math.min(
+    window.innerWidth - width - 12,
+    Math.max(12, anchorRect.left + anchorRect.width / 2 - width / 2),
+  );
+  popover.style.width = `${width}px`;
+  popover.style.left = `${left}px`;
+  popover.style.top = `${Math.min(window.innerHeight - popover.offsetHeight - 12, anchorRect.bottom + 8)}px`;
+  packingTitlePopover = popover;
+}
+
+document.addEventListener("click", closePackingTitlePopover);
+window.addEventListener("scroll", closePackingTitlePopover, true);
 
 function setStatus(message) {
   saveStatus.textContent = message;
@@ -178,6 +208,7 @@ function setActiveTemplateId(templateId) {
 function setPackingView(view) {
   if (!new Set(["working", "template"]).has(view)) return;
   state.activePackingView = view;
+  state.addingPackingRoot = false;
   setUiPreference("packing-view", view);
   packingViewTabs.forEach((tab) => {
     const active = tab.dataset.packingView === view;
@@ -191,7 +222,10 @@ function setPackingView(view) {
       ? rememberedId
       : visibleTemplates[0]?.id || null,
   );
-  newListBtn.textContent = view === "working" ? "＋ 新建清单" : "＋ 新建模板";
+  const newListLabel = view === "working" ? "新建清单" : "新建模板";
+  newListBtn.textContent = "+";
+  newListBtn.setAttribute("aria-label", newListLabel);
+  newListBtn.title = newListLabel;
   packingItemInput.placeholder = view === "working" ? "新增一级目录" : "新增模板目录";
   renderTemplates();
   renderEditor();
@@ -289,7 +323,7 @@ function updateAuthUi() {
   viewTabsNav.classList.toggle("single-tab", false);
   signOutBtn.hidden = !signedIn;
   newListBtn.hidden = !signedIn;
-  packingItemForm.hidden = !signedIn;
+  packingItemForm.hidden = !signedIn || !state.addingPackingRoot;
   viewTabs.forEach((tab) => {
     tab.hidden = !signedIn;
   });
@@ -309,6 +343,7 @@ function loadSignedOutData() {
   state.activeTemplateId = null;
   state.openTemplateMenuId = null;
   state.addingChildForItemId = null;
+  state.addingPackingRoot = false;
   state.showCompletedTodos = false;
   state.editingTodoId = null;
   state.editingBucketItemId = null;
@@ -462,7 +497,7 @@ function renderTodos() {
     }
     todoList.append(node);
   });
-  todoCounter.textContent = `${activeTodos.length} 项待办`;
+  todoCounter.textContent = `${activeTodos.length} to GO`;
   todoEmpty.textContent = state.todos.length === 0
     ? "还没有待办，先加一件小事吧。"
     : "当前待办都完成了，做得不错。";
@@ -772,6 +807,7 @@ function setupCategoryCombobox(input, suggestions) {
 
 function renderTemplates() {
   templateList.innerHTML = "";
+  templateList.append(newListBtn);
   const visibleTemplates = getVisibleTemplates();
 
   visibleTemplates.forEach((template) => {
@@ -789,10 +825,15 @@ function renderTemplates() {
     tab.type = "button";
     tab.innerHTML = `<strong></strong><span></span>`;
     tab.querySelector("strong").textContent = template.name;
-    tab.querySelector("span").textContent = `${countItems(template.items)} 件`;
+    const totalCount = countItems(template.items);
+    const countLabel = state.activePackingView === "working"
+      ? `${countPackedItems(template.items)}/${totalCount}`
+      : `${totalCount}`;
+    tab.querySelector("span").textContent = `· ${countLabel}`;
     tab.addEventListener("click", () => {
       setActiveTemplateId(template.id);
       state.openTemplateMenuId = null;
+      state.addingPackingRoot = false;
       render();
     });
 
@@ -804,12 +845,24 @@ function renderTemplates() {
     menuButton.hidden = !state.session;
     menuButton.addEventListener("click", () => {
       setActiveTemplateId(template.id);
+      state.addingPackingRoot = false;
       state.openTemplateMenuId = state.openTemplateMenuId === template.id ? null : template.id;
       render();
     });
 
     const menu = document.createElement("div");
     menu.className = "template-menu";
+
+    const addRootButton = document.createElement("button");
+    addRootButton.type = "button";
+    addRootButton.textContent = state.activePackingView === "working" ? "新增分类" : "新增模板分类";
+    addRootButton.addEventListener("click", () => {
+      setActiveTemplateId(template.id);
+      state.openTemplateMenuId = null;
+      state.addingPackingRoot = true;
+      render();
+      requestAnimationFrame(() => packingItemInput.focus());
+    });
 
     const renameButton = document.createElement("button");
     renameButton.type = "button";
@@ -861,9 +914,9 @@ function renderTemplates() {
       render();
       shareTemplate(template);
     });
-    menu.append(renameButton, useButton);
+    menu.append(addRootButton);
     if (state.activePackingView === "working") menu.append(saveAsTemplateButton);
-    menu.append(shareButton, deleteButton);
+    menu.append(useButton, renameButton, shareButton, deleteButton);
     if (state.renamingTemplateId === template.id) {
       menu.append(createInlineEditForm(template.name, async (value) => {
         state.renamingTemplateId = null;
@@ -882,7 +935,7 @@ function renderTemplates() {
       }, () => {
         state.confirmingDeleteTemplateId = null;
         render();
-      }));
+      }, true));
     }
     card.append(tab, menuButton, menu);
     templateList.append(card);
@@ -955,9 +1008,9 @@ function setupTemplateDrag(card, template) {
 
 function renderEditor() {
   const template = getActiveTemplate();
+  packingItemForm.hidden = !template || !state.addingPackingRoot;
   if (!template) {
     packingItems.innerHTML = "";
-    packingCounter.textContent = "0 件";
     packingEmpty.textContent = state.activePackingView === "working"
       ? "还没有正在准备的清单。"
       : "还没有模板，可以从“带点啥呢”存一份过来。";
@@ -970,11 +1023,7 @@ function renderEditor() {
     packingItems.append(renderPackingItem(template, item, 0, template.items));
   });
 
-  const packedCount = countPackedItems(template.items);
   const totalCount = countItems(template.items);
-  packingCounter.textContent = state.activePackingView === "working"
-    ? `${packedCount}/${totalCount} 件`
-    : `${totalCount} 件`;
   packingEmpty.textContent = state.activePackingView === "working"
     ? "这个清单还没有物品。"
     : "这个模板还没有物品。";
@@ -999,21 +1048,24 @@ function renderPackingItem(template, item, depth, siblingItems) {
   const itemTitle = row.querySelector(".item-title");
   itemTitle.textContent = item.title;
   if (depth > 0) {
-    itemTitle.classList.add("expandable-packing-title");
-    itemTitle.tabIndex = 0;
-    itemTitle.setAttribute("role", "button");
-    itemTitle.setAttribute("aria-expanded", "false");
-    itemTitle.title = "点击展开完整名称";
-    const toggleFullTitle = (event) => {
+    const showFullTitle = (event) => {
       event.preventDefault();
       event.stopPropagation();
-      const expanded = wrapper.classList.toggle("title-expanded");
-      itemTitle.setAttribute("aria-expanded", String(expanded));
-      itemTitle.title = expanded ? "点击收起名称" : "点击展开完整名称";
+      if (itemTitle.scrollWidth > itemTitle.clientWidth) {
+        showPackingTitlePopover(itemTitle, item.title);
+      }
     };
-    itemTitle.addEventListener("click", toggleFullTitle);
-    itemTitle.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") toggleFullTitle(event);
+    itemTitle.addEventListener("click", showFullTitle);
+    requestAnimationFrame(() => {
+      if (!itemTitle.isConnected || itemTitle.scrollWidth <= itemTitle.clientWidth) return;
+      itemTitle.classList.add("truncated-packing-title");
+      itemTitle.tabIndex = 0;
+      itemTitle.setAttribute("role", "button");
+      itemTitle.setAttribute("aria-label", `查看完整名称：${item.title}`);
+      itemTitle.title = "点击查看完整名称";
+      itemTitle.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") showFullTitle(event);
+      });
     });
   }
 
@@ -1350,19 +1402,27 @@ function createTodoEditForm(currentValue, onSave) {
   return form;
 }
 
-function createDeleteConfirmRow(onConfirm, onCancel) {
+function createDeleteConfirmRow(onConfirm, onCancel, iconOnly = false) {
   const row = document.createElement("div");
   row.className = "delete-confirm-row";
 
   const confirmButton = document.createElement("button");
   confirmButton.className = "danger-menu-action";
   confirmButton.type = "button";
-  confirmButton.textContent = "删除";
+  confirmButton.textContent = iconOnly ? "✓" : "删除";
+  if (iconOnly) {
+    confirmButton.title = "确认删除";
+    confirmButton.setAttribute("aria-label", "确认删除");
+  }
   confirmButton.addEventListener("click", onConfirm);
 
   const cancelButton = document.createElement("button");
   cancelButton.type = "button";
-  cancelButton.textContent = "取消";
+  cancelButton.textContent = iconOnly ? "×" : "取消";
+  if (iconOnly) {
+    cancelButton.title = "取消";
+    cancelButton.setAttribute("aria-label", "取消");
+  }
   cancelButton.addEventListener("click", onCancel);
 
   row.append(confirmButton, cancelButton);
@@ -1898,7 +1958,14 @@ packingItemForm.addEventListener("submit", async (event) => {
   if (!template || !title) return;
   template.items.unshift({ id: crypto.randomUUID(), title, packed: false, children: [] });
   packingItemInput.value = "";
+  state.addingPackingRoot = false;
   await updateTemplate(template.id, { items: template.items });
+});
+
+packingCancelRootBtn.addEventListener("click", () => {
+  state.addingPackingRoot = false;
+  packingItemInput.value = "";
+  renderEditor();
 });
 
 init();
